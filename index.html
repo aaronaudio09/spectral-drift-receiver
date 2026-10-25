@@ -47,6 +47,11 @@ body.ui-hidden .stagebtns{display:none}
 .stagebtns{position:absolute;right:max(10px,var(--sa-right));top:max(10px,var(--sa-top));display:flex;gap:6px}
 .icobtn{width:36px;height:36px;border-radius:var(--radius);background:rgba(7,8,12,.62);border:1px solid var(--line-2);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
 .icobtn:hover{border-color:var(--accent)}
+.castslot{cursor:default}
+.subh{margin-top:14px}
+.pcrow{gap:6px}
+.pcin{flex:1;min-width:0;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--radius);color:var(--fg);padding:6px 8px;font-family:var(--font-data)}
+.pcin.pin{flex:0 0 72px;letter-spacing:.2em;text-align:center}
 .icobtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(7,8,12,.86);border:1px solid var(--line-2);padding:8px 14px;border-radius:var(--radius);font-size:12px;color:var(--fg);opacity:0;transition:opacity .3s;pointer-events:none;max-width:88%;text-align:center}
 .toast.show{opacity:1}
@@ -139,10 +144,14 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
 .keys kbd{font-family:var(--font-data);font-size:11px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:4px;padding:1px 6px;color:var(--fg)}
 .panel{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(22,26,37,.5)}
 .panel h3{margin:0;font-size:13px;font-weight:700;letter-spacing:.04em}
+.imgrow{display:flex;gap:8px;align-items:center}
+.imgthumb{width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid var(--line-2);flex:none}
+.edtag{font-style:normal;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px;font-family:var(--font-data)}
 
 @media (max-width:899px){
-  #app{grid-template-columns:100%;grid-template-rows:minmax(0,1fr) auto}
-  #dock{border-left:0;border-top:1px solid var(--line);max-height:74%;padding-top:0}
+  #app{display:flex;flex-direction:column}
+  #stage{flex:1 1 0;min-height:34%}
+  #dock{flex:0 1 auto;border-left:0;border-top:1px solid var(--line);max-height:62%;padding-top:0}
   #dock.collapsed .dock-body{display:none}
   .expand{display:inline-block}
 }
@@ -151,12 +160,14 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
 <div id="app">
   <div id="stage">
     <canvas id="milk"></canvas>
+    <canvas id="hyper" hidden></canvas>
     <canvas id="avs" hidden></canvas>
     <canvas id="classic" hidden></canvas>
     <canvas id="reactor" hidden></canvas>
     <div class="flash" id="flash"></div>
     <div class="hint" id="hint"><span>Press ▶ for the demo loop, or load a track</span></div>
     <div class="stagebtns">
+      <div class="icobtn castslot" id="castSlot" hidden aria-hidden="true"></div>
       <button class="icobtn" id="btnHide" title="Hide controls (H)" aria-label="Hide controls">
         <svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A10.6 10.6 0 0 1 12 5c5 0 9 4 10 7-.4 1.2-1.2 2.5-2.3 3.6M6.3 6.3C4.1 7.7 2.6 9.6 2 12c1 3 5 7 10 7 1.6 0 3.1-.4 4.4-1"/></svg>
       </button>
@@ -178,6 +189,7 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
       <div class="sel-row">
         <div class="lab-sel"><span>Visualizer</span>
           <select id="engineSel" class="big" aria-label="Visualizer">
+            <option value="hyper">Hyperspace</option>
             <option value="milk">MilkDrop</option>
             <option value="avs">AVS stack</option>
             <option value="classic">Classic</option>
@@ -186,6 +198,7 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
         </div>
         <div class="lab-sel"><span id="fxLabel">Effect</span>
           <select id="presetSel" aria-label="MilkDrop preset"></select>
+          <select id="fxsel-hyper" aria-label="Hyperspace scene" hidden></select>
           <select id="fxsel-avs" aria-label="AVS effect" hidden></select>
           <select id="fxsel-classic" aria-label="Classic part" hidden></select>
           <select id="fxsel-reactor" aria-label="Reactor component" hidden></select>
@@ -211,6 +224,7 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
         <button class="btn sm" id="btnDemo">Demo</button>
         <label class="btn sm" for="fileIn">Load track</label>
         <input type="file" id="fileIn" accept="audio/*" hidden>
+        <input type="file" id="imgIn" accept="image/*" hidden>
         <button class="btn sm" id="btnDevice" title="What this device is playing" hidden>Device audio</button>
         <button class="btn sm" id="btnMic" title="Listen through the microphone">Mic</button>
         <button class="btn sm" id="btnSys" title="Capture what the computer is playing (desktop Chrome/Edge)">System</button>
@@ -233,6 +247,26 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
         </div>
       </section>
 
+      <section id="sec-hyper" hidden>
+        <h2>Hyperspace <small>endless zoom · space · your image</small></h2>
+        <div class="row">
+          <button class="btn sm" id="btnHyPrev">◀ Prev</button>
+          <button class="btn sm" id="btnHyRand">Random</button>
+          <button class="btn sm" id="btnHyNext">Next ▶</button>
+        </div>
+        <div class="panel" id="panel-hyper"></div>
+        <div class="row">
+          <button class="btn sm" id="btnHyMutate">Mutate dials</button>
+          <button class="btn sm" id="btnHyReset">Reset scene</button>
+        </div>
+        <div class="ctl">
+          <label for="hyq">Render quality</label><output id="oHyq">auto</output>
+          <input type="range" id="hyq" min="0" max="2" step="1" value="1">
+          <span class="why">Internal resolution. Drop it if a phone stutters.</span>
+        </div>
+        <p class="note" id="hyNote">Every scene is a shader that keeps generating new texture as it zooms, so the dive never runs out. The image scenes use a picture you load.</p>
+      </section>
+
       <section id="sec-milk">
         <h2>MilkDrop presets <small id="presetCount">0</small></h2>
         <input type="text" id="presetSearch" placeholder="Filter presets…" aria-label="Filter presets">
@@ -241,6 +275,9 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
           <button class="btn sm" id="btnRand">Random</button>
           <button class="btn sm" id="btnNext">Next ▶</button>
         </div>
+        <div class="lab-sel"><span>Edit this preset<em id="milkEdTag" class="edtag">as authored</em></span><select id="fxsel-milked" aria-label="Preset edit group"></select></div>
+        <div class="panel" id="panel-milked"></div>
+        <div class="row"><button class="btn sm" id="btnMilkReset">Reset edits</button></div>
         <label class="chk on-main"><input type="checkbox" id="autoCycle"> Cycle presets automatically</label>
         <div class="ctl">
           <label for="cycle">Every</label><output id="oCycle">20 s</output>
@@ -258,7 +295,7 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
           <input type="range" id="quality" min="0" max="2" step="1" value="1">
           <span class="why">Pixel ratio 0.75 / auto / device. Drop it if a phone stutters.</span>
         </div>
-        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files; their dials live inside the preset. For your own math, use AVS or Reactor.</p>
+        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files. The edit dials layer your changes on top of the running preset, the way MilkDrop's M menu did, and are remembered per preset.</p>
       </section>
 
       <section id="sec-avs" hidden>
@@ -319,16 +356,22 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
       </details>
 
       <section id="sec-android" hidden>
-        <h2>Phone</h2>
+        <h2>Phone <small>home screen</small></h2>
         <div class="row"><button class="btn sm" id="btnWallpaper">Set as live wallpaper</button></div>
-        <p class="note">The wallpaper uses the visualizer and effect chosen here (AVS, Classic or Reactor; MilkDrop needs the full app). Tap the Cast icon at the top to send it to a TV.</p>
+        <div class="row"><button class="btn sm" id="btnBackdrop">Home screen picture…</button><button class="btn sm" id="btnExit">Exit app</button></div>
+        <p class="note" id="backdropNote"></p>
+        <h2 class="subh">Control a PC</h2>
+        <div class="lab-sel"><span>PC on this Wi-Fi</span><select id="pcSel"></select></div>
+        <div class="row pcrow"><input id="pcAddr" class="pcin" placeholder="PC address, e.g. 192.168.1.20" autocomplete="off" hidden><input id="pcPin" class="pcin pin" inputmode="numeric" maxlength="4" placeholder="PIN" autocomplete="off"><button class="btn sm" id="btnPcLink">Connect</button></div>
+        <p class="note" id="pcNote">Open Spectral Drift on the PC (same Wi-Fi) and enter the PIN it shows under Phone remote. While connected, every change you make here shows up on the PC. Casting to a TV mirrors your changes the same way.</p>
+        <p class="note">While Spectral Drift is open or running in the background (Home or Back), your home screen shows the visualizer and dials you picked here. Exit the app (Exit app, or swipe it away in Recents) and the home screen goes back to your picture. Tap the Cast icon at the top to send it to a TV.</p>
       </section>
 
       <details>
         <summary>Keys</summary>
         <div class="keys">
           <kbd>Space</kbd><span>play / pause</span>
-          <kbd>N</kbd><span>next preset</span>
+          <kbd>N</kbd><span>next preset / scene</span>
           <kbd>P</kbd><span>previous preset</span>
           <kbd>R</kbd><span>random preset</span>
           <kbd>E</kbd><span>next visualizer</span>
@@ -349,7 +392,7 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
 const $ = s => document.querySelector(s);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
-const ENGINES = ['milk','avs','classic','reactor'];
+const ENGINES = ['hyper','milk','avs','classic','reactor'];
 const WALL = /wallpaper/.test(location.hash);   // #wallpaper: no UI, driven by a host (Android live wallpaper, Lively, Wallpaper Engine, Cast receiver)
 
 /* ================= defaults ================= */
@@ -390,7 +433,8 @@ const AVS_DEF = {
   plane:  { on:false, rows:14, cols:24, speed:1, height:1, persp:1, size:1, ripple:0, dir:'toward' },
   stars:  { on:false, count:160, speed:1, bass:1, size:1, spread:1, twinkle:0 },
   ring:   { on:false, radius:0.25, src:'level', amt:0.6, width:1.5, sides:0, wobble:0, wfreq:6, spin:0 },
-  part:   { on:false, path:'lissajous', speed:1, size:2, bass:7, count:1, ghosts:0 }
+  part:   { on:false, path:'lissajous', speed:1, size:2, bass:7, count:1, ghosts:0 },
+  pic:    { on:false, size:0.55, x:0, y:0, src:'bass', bounce:0.6, spin:0, angle:0, alpha:0.85, blend:'source-over', beatOnly:false }
 };
 const AVS_PRESETS = {
   'Spiral tunnel':   { },
@@ -410,7 +454,11 @@ const AVS_PRESETS = {
   'Dyna swirl':      { trans:{fade:6,blur:1}, move:{on:false}, dyna:{on:true,grid:28,fd:'d*(1-0.06*W*b)',fr:'r+0.08*W*sin(t*1.5+d*Q)*(1-d)'}, scope:Object.assign({preset:'Lissajous'}, SCOPES['Lissajous']), ring:{on:true,src:'bass'} },
   'Text drop':       { trans:{fade:14,blur:1}, move:{zoom:0.04,rot:0.01,warp:'none'}, color:{band:false,speed:1}, scope:{on:false}, text:{on:true,size:0.28,bounce:1.4}, grid:{on:true,spacing:16,pulse:1} },
   'Glitch mosaic':   { trans:{fade:12,blur:0}, move:{zoom:-0.03,rot:0,warp:'none'}, mosaic:{on:true,size:2,beatSize:10}, glitch:{on:true,beatShift:8,beatScatter:4}, scope:Object.assign({preset:'Spectrum bars', mode:'fill'}, SCOPES['Spectrum bars']) },
-  'Epitrochoid':     { trans:{fade:5,blur:1}, move:{zoom:-0.04,rot:0.03,warp:'bulge',W:0.5}, scope:Object.assign({preset:'Epitrochoid', K:2}, SCOPES['Epitrochoid']) }
+  'Epitrochoid':     { trans:{fade:5,blur:1}, move:{zoom:-0.04,rot:0.03,warp:'bulge',W:0.5}, scope:Object.assign({preset:'Epitrochoid', K:2}, SCOPES['Epitrochoid']) },
+  'Picture swirl':   { trans:{fade:2,blur:1}, move:{zoom:-0.035,rot:0.012,warp:'swirl',W:0.7}, scope:{on:false}, pic:{on:true,size:0.45,alpha:0.35,bounce:0.8} },
+  'Picture water':   { trans:{fade:1,blur:0}, move:{on:false}, water:{on:true,drops:1,strength:2,beatDrop:true}, scope:{on:false}, pic:{on:true,size:0.95,alpha:0.12,bounce:0.2} },
+  'Picture tunnel':  { trans:{fade:4,blur:1,mirror:'quad'}, move:{zoom:-0.07,rot:0.03,warp:'tunnel',W:1.2}, scope:{on:false}, pic:{on:true,size:0.22,alpha:0.55,spin:0.6} },
+  'Picture beat flash': { trans:{fade:6,blur:1}, move:{zoom:-0.05,rot:0.01,warp:'none'}, pic:{on:true,size:0.7,alpha:0.6,blend:'lighter',beatOnly:true,bounce:1.2} }
 };
 const RE_DEF = {
   feedback: { trail:0.90, zoom:1, zoomSrc:'bass', spin:1, spinSrc:'mid', wobble:1 },
@@ -422,18 +470,162 @@ const RE_DEF = {
 };
 const CL_DEF = { main: { mode:'both', bands:40, fall:0.6, hold:18, scale:'log', gap:1, gain:1, scope:'line', grid:true, hue:0 } };
 
-const DEF = { v:3, engine:'milk', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5 };
+/* ================= Hyperspace scenes and their dials ================= */
+const HY_BASE = { speed:0.5, bass:0.8, spin:0.05, cx:0, cy:0, wobble:0.15, twist:0.5, arms:1, detail:2.2, oct:5, stars:0.35, core:1, kal:0,
+  trail:0.3, fbzoom:1.01, fbrot:0, warp:0.2, keep:0.992, inject:0.4, nest:3, levelRot:0, imgScale:1, depth:1,
+  pal:'nebula', hue:0, hueSpeed:3, sat:1.1, bright:1.2, contrast:1.05, chroma:0.2, vig:0.45 };
+const deg = v => Math.round(v) + '°';
+const HC = {
+  speed:   { t:'range', k:'speed', l:'Zoom speed', min:-1.5, max:4, step:0.05, hint:'Negative flies backward' },
+  flight:  { t:'range', k:'speed', l:'Flight speed', min:-1.5, max:4, step:0.05 },
+  bass:    { t:'range', k:'bass', l:'Bass pushes speed', min:0, max:4, step:0.05 },
+  spin:    { t:'range', k:'spin', l:'Spin', min:-2, max:2, step:0.01 },
+  cx:      { t:'range', k:'cx', l:'Center X', min:-0.45, max:0.45, step:0.01 },
+  cy:      { t:'range', k:'cy', l:'Center Y', min:-0.45, max:0.45, step:0.01 },
+  wobble:  { t:'range', k:'wobble', l:'Path wobble', min:0, max:1.5, step:0.01 },
+  twist:   { t:'range', k:'twist', l:'Spiral twist', min:-4, max:4, step:0.05 },
+  arms:    { t:'range', k:'arms', l:'Arms / symmetry', min:1, max:12, step:1 },
+  detail:  { t:'range', k:'detail', l:'Detail scale', min:0.5, max:8, step:0.05 },
+  oct:     { t:'range', k:'oct', l:'Texture layers', min:1, max:6, step:1, hint:'Fewer = smoother and faster' },
+  stars:   { t:'range', k:'stars', l:'Star density', min:0, max:1, step:0.01 },
+  core:    { t:'range', k:'core', l:'Core glow', min:0, max:4, step:0.05 },
+  kal:     { t:'range', k:'kal', l:'Kaleidoscope mirrors (0 = off)', min:0, max:16, step:1 },
+  trail:   { t:'range', k:'trail', l:'Trails', min:0, max:0.97, step:0.01 },
+  fbzoom:  { t:'range', k:'fbzoom', l:'Trail zoom', min:0.97, max:1.06, step:0.001, fmt:v=>v.toFixed(3) },
+  fbrot:   { t:'range', k:'fbrot', l:'Trail rotation', min:-0.06, max:0.06, step:0.001, fmt:v=>v.toFixed(3) },
+  warp:    { t:'range', k:'warp', l:'Trail warp', min:0, max:3, step:0.02 },
+  keep:    { t:'range', k:'keep', l:'Paint persistence', min:0.9, max:0.999, step:0.001, fmt:v=>v.toFixed(3) },
+  inject:  { t:'range', k:'inject', l:'Image injection (beats add more)', min:0, max:1, step:0.01 },
+  nest:    { t:'range', k:'nest', l:'Nest ratio', min:1.3, max:8, step:0.05, hint:'How much smaller each copy is. The copy sits over the middle of your picture, so raise this if the subject is centered' },
+  levelRot:{ t:'range', k:'levelRot', l:'Turn per level', min:-90, max:90, step:1, fmt:deg },
+  imgScale:{ t:'range', k:'imgScale', l:'Image size', min:0.2, max:3, step:0.01 },
+  depth:   { t:'range', k:'depth', l:'Tunnel depth', min:0.2, max:3, step:0.01 },
+  pal:     { t:'select', k:'pal', l:'Color scheme', o:[['nebula','Nebula'],['aurora','Aurora'],['ember','Ember'],['ice','Ice'],['rainbow','Rainbow'],['moon','Moonlight']] },
+  hue:     { t:'range', k:'hue', l:'Hue shift', min:0, max:360, step:1, fmt:deg },
+  hueSpeed:{ t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s' },
+  sat:     { t:'range', k:'sat', l:'Saturation', min:0, max:2, step:0.01 },
+  bright:  { t:'range', k:'bright', l:'Brightness', min:0.2, max:3, step:0.01 },
+  contrast:{ t:'range', k:'contrast', l:'Contrast', min:0.5, max:2, step:0.01 },
+  chroma:  { t:'range', k:'chroma', l:'Chromatic split (beats widen it)', min:0, max:1.5, step:0.01 },
+  vig:     { t:'range', k:'vig', l:'Vignette', min:0, max:1, step:0.01 },
+  img:     { t:'imgbtn' }
+};
+const hc = (k, o) => Object.assign({}, HC[k], o || {});
+const H_HEAD = text => ({ t:'head', text });
+const H_TRAILS = [H_HEAD('Trails (feedback)'), hc('trail'), hc('fbzoom'), hc('fbrot'), hc('warp')];
+const H_COLOR = (withPal) => [H_HEAD('Color'), ...(withPal ? [hc('pal')] : []), hc('hue'), hc('hueSpeed'), hc('sat'), hc('bright'), hc('contrast'), hc('chroma'), hc('vig')];
+const HY_SCENES = {
+  nebula:   { id:0, label:'Infinite nebula', group:'Space', def:{ speed:0.5, bass:0.9, spin:0.04, twist:0.6, arms:1, detail:2.2, oct:5, stars:0.35, core:1, trail:0.35, pal:'nebula', hueSpeed:3, bright:1.25 },
+    controls:[H_HEAD('Zoom'), hc('speed'), hc('bass'), hc('spin'), hc('wobble'), hc('cx'), hc('cy'), H_HEAD('Shape'), hc('twist'), hc('arms'), hc('detail'), hc('oct'), hc('stars'), hc('core'), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] },
+  hyper:    { id:1, label:'Hyperspace', group:'Space', def:{ speed:1.6, bass:1.5, spin:0.02, twist:0, detail:2, oct:3, stars:0.7, core:1.5, trail:0.55, fbzoom:1.015, warp:0, pal:'ice', hueSpeed:2, chroma:0.4 },
+    controls:[H_HEAD('Flight'), hc('flight'), hc('bass'), hc('spin'), hc('wobble'), hc('cx'), hc('cy'), H_HEAD('Shape'), hc('twist'), hc('stars'), hc('detail', { l:'Gas detail' }), hc('oct'), hc('core'), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] },
+  galaxy:   { id:2, label:'Galaxy dive', group:'Space', def:{ speed:0.3, bass:0.6, spin:0.1, twist:1.2, arms:2, detail:2.5, oct:4, stars:0.4, core:2, trail:0.2, pal:'ember', hueSpeed:2 },
+    controls:[H_HEAD('Zoom'), hc('speed'), hc('bass'), hc('spin'), hc('wobble'), hc('cx'), hc('cy'), H_HEAD('Shape'), hc('arms', { l:'Spiral arms' }), hc('twist', { l:'Arm wind' }), hc('detail'), hc('oct'), hc('stars'), hc('core'), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] },
+  wormhole: { id:3, label:'Wormhole', group:'Space', def:{ speed:0.8, bass:1, spin:0.05, twist:0.5, arms:3, detail:1.6, oct:4, core:1.2, trail:0.4, wobble:0.6, depth:1, pal:'aurora', hueSpeed:4 },
+    controls:[H_HEAD('Flight'), hc('flight'), hc('bass'), hc('spin'), hc('wobble'), hc('cx'), hc('cy'), H_HEAD('Tunnel'), hc('depth'), hc('twist', { l:'Wall twist' }), hc('arms', { l:'Wall bands' }), hc('detail'), hc('oct'), hc('core', { l:'Light at the end' }), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] },
+  void:     { id:4, label:'Star nest', group:'Space', def:{ speed:0.6, bass:0.8, spin:0.03, detail:2, trail:0.25, pal:'rainbow', hueSpeed:2, bright:0.9, contrast:1.2, wobble:0 },
+    controls:[H_HEAD('Flight'), hc('flight'), hc('bass'), hc('spin'), hc('wobble'), H_HEAD('Space'), hc('detail', { l:'Fractal fold', hint:'Small moves change the whole structure' }), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] },
+  droste:   { id:5, label:'Image · infinite zoom', group:'Your image', def:{ speed:0.5, bass:0.8, spin:0, nest:4, levelRot:0, imgScale:0.9, core:0.6, trail:0.1, warp:0, hueSpeed:0, chroma:0.15, sat:1, bright:1 },
+    controls:[hc('img'), H_HEAD('Zoom'), hc('speed'), hc('bass'), hc('spin'), hc('wobble'), hc('cx'), hc('cy'), H_HEAD('Nesting'), hc('nest'), hc('levelRot'), hc('imgScale'), hc('core', { l:'Frame glow' }), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] },
+  kaleido:  { id:6, label:'Image · kaleidoscope', group:'Your image', def:{ speed:0.3, bass:0.8, spin:0.1, arms:6, twist:0.5, detail:1.5, imgScale:1, trail:0.45, hueSpeed:0, sat:1.1, bright:1 },
+    controls:[hc('img'), H_HEAD('Motion'), hc('flight', { l:'Drift speed' }), hc('bass'), hc('spin'), hc('wobble'), H_HEAD('Mirrors'), hc('arms', { l:'Mirror segments', min:2 }), hc('twist', { l:'Inner spin' }), hc('detail', { l:'Zoom' }), hc('imgScale'), ...H_TRAILS, ...H_COLOR(false)] },
+  liquid:   { id:7, label:'Image · liquid paint', group:'Your image', def:{ spin:0.02, imgScale:1, inject:0.4, keep:0.992, fbzoom:1.004, fbrot:0.004, warp:1.2, hueSpeed:0, sat:1.1, bright:1, chroma:0.1 },
+    controls:[hc('img'), H_HEAD('Paint'), hc('inject'), hc('keep'), hc('imgScale'), hc('spin'), hc('kal'), H_HEAD('Flow'), hc('warp', { l:'Flow strength' }), hc('fbzoom', { l:'Flow zoom' }), hc('fbrot', { l:'Flow swirl' }), ...H_COLOR(false)] },
+  imgtunnel:{ id:8, label:'Image · tunnel', group:'Your image', def:{ speed:0.8, bass:1, spin:0.03, twist:0.5, arms:2, depth:1, imgScale:1, core:1, wobble:0.5, trail:0.3, hueSpeed:0, sat:1, bright:1 },
+    controls:[hc('img'), H_HEAD('Flight'), hc('flight'), hc('bass'), hc('spin'), hc('wobble'), hc('cx'), hc('cy'), H_HEAD('Tunnel'), hc('depth'), hc('twist', { l:'Wall twist' }), hc('arms', { l:'Repeats around' }), hc('imgScale', { l:'Repeat length' }), hc('core', { l:'Light at the end' }), hc('kal'), ...H_TRAILS, ...H_COLOR(true)] }
+};
+for (const k in HY_SCENES){ const sc = HY_SCENES[k]; sc.def = Object.assign({}, HY_BASE, sc.def); }
+
+/* ================= MilkDrop editor groups (the M menu's Motion / Waveform / Augmentations, as dials) ================= */
+const TRI = [['preset','Preset'],['on','On'],['off','Off']];
+const ME_UI = {
+  motion: { label:'Motion', controls:[
+    { t:'vars', text:'Applied on top of this preset every frame, after its own equations, so every dial moves the picture.' },
+    { t:'range', k:'zoom', l:'Zoom (+ in, − out)', min:-0.08, max:0.08, step:0.001, fmt:v=>v.toFixed(3) },
+    { t:'range', k:'zoomexp', l:'Zoom curve ×', min:0.25, max:4, step:0.05 },
+    { t:'range', k:'rot', l:'Rotation', min:-0.2, max:0.2, step:0.002, fmt:v=>v.toFixed(3) },
+    { t:'range', k:'warp', l:'Warp amount ×', min:0, max:6, step:0.05 },
+    { t:'range', k:'warpscale', l:'Warp scale ×', min:0.2, max:5, step:0.05 },
+    { t:'range', k:'warpspeed', l:'Warp speed ×', min:0, max:5, step:0.05 },
+    { t:'range', k:'dx', l:'Drift X', min:-0.02, max:0.02, step:0.0005, fmt:v=>v.toFixed(4) },
+    { t:'range', k:'dy', l:'Drift Y', min:-0.02, max:0.02, step:0.0005, fmt:v=>v.toFixed(4) },
+    { t:'range', k:'sx', l:'Stretch X ×', min:0.9, max:1.1, step:0.002, fmt:v=>v.toFixed(3) },
+    { t:'range', k:'sy', l:'Stretch Y ×', min:0.9, max:1.1, step:0.002, fmt:v=>v.toFixed(3) },
+    { t:'range', k:'cx', l:'Center X', min:-0.5, max:0.5, step:0.01 },
+    { t:'range', k:'cy', l:'Center Y', min:-0.5, max:0.5, step:0.01 },
+    { t:'head', text:'Extra audio push' },
+    { t:'range', k:'bassZoom', l:'Bass kicks zoom', min:0, max:1, step:0.01 },
+    { t:'range', k:'trebSpin', l:'Treble spins', min:-1, max:1, step:0.01 } ] },
+  trails: { label:'Trails & echo', controls:[
+    { t:'range', k:'decay', l:'Sustain ±', min:-0.15, max:0.02, step:0.001, fmt:v=>(v>=0?'+':'')+v.toFixed(3), hint:'+ keeps trails longer, − fades faster' },
+    { t:'range', k:'gamma', l:'Gamma ×', min:0.25, max:3, step:0.05 },
+    { t:'select', k:'dcenter', l:'Darken center', o:TRI },
+    { t:'check', k:'echo', l:'Video echo (mirrored second layer)' },
+    { t:'range', k:'echo_alpha', l:'Echo opacity', min:0, max:1, step:0.01 },
+    { t:'range', k:'echo_zoom', l:'Echo zoom', min:0.5, max:3, step:0.01 },
+    { t:'select', k:'echo_orient', l:'Echo orientation', num:true, o:[[0,'Normal'],[1,'Flip X'],[2,'Flip Y'],[3,'Flip both']] } ] },
+  wave: { label:'Waveform', controls:[
+    { t:'select', k:'mode', l:'Wave mode', o:[['preset','Preset'],['0','0 · circle'],['1','1 · X-Y oscilloscope'],['2','2 · centered spiro'],['3','3 · spiro, volume size'],['4','4 · horizontal'],['5','5 · explosive'],['6','6 · line'],['7','7 · double line']] },
+    { t:'range', k:'alpha', l:'Opacity ×', min:0, max:4, step:0.05 },
+    { t:'range', k:'scale', l:'Size ×', min:0.1, max:5, step:0.05 },
+    { t:'range', k:'mystery', l:'Mystery', min:-1, max:1, step:0.01 },
+    { t:'range', k:'wx', l:'Position X', min:-0.5, max:0.5, step:0.01 },
+    { t:'range', k:'wy', l:'Position Y', min:-0.5, max:0.5, step:0.01 },
+    { t:'select', k:'color', l:'Wave color', o:[['preset','Preset'],['custom','Pick a hue'],['rainbow','Rainbow cycle']] },
+    { t:'range', k:'hue', l:'Wave hue', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°' },
+    { t:'select', k:'additive', l:'Additive', o:TRI }, { t:'select', k:'thick', l:'Thick', o:TRI }, { t:'select', k:'dots', l:'Dots', o:TRI } ] },
+  borders: { label:'Borders & motion vectors', controls:[
+    { t:'range', k:'ob', l:'Outer border', min:0, max:0.5, step:0.005 },
+    { t:'range', k:'ib', l:'Inner border', min:0, max:0.5, step:0.005 },
+    { t:'range', k:'bhue', l:'Border hue', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°' },
+    { t:'range', k:'ba', l:'Border opacity', min:0, max:1, step:0.01 },
+    { t:'head', text:'Motion vectors' },
+    { t:'check', k:'mv', l:'Show the motion-vector grid' },
+    { t:'range', k:'mv_x', l:'Columns', min:1, max:64, step:1 },
+    { t:'range', k:'mv_y', l:'Rows', min:1, max:48, step:1 },
+    { t:'range', k:'mv_l', l:'Length', min:0, max:5, step:0.05 },
+    { t:'range', k:'mv_a', l:'Opacity', min:0, max:1, step:0.01 },
+    { t:'range', k:'mvhue', l:'Hue', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°' } ] },
+  filters: { label:'Color & filters', controls:[
+    { t:'range', k:'hue', l:'Hue shift', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s' },
+    { t:'range', k:'sat', l:'Saturation', min:0, max:3, step:0.01 },
+    { t:'range', k:'bright', l:'Brightness', min:0.3, max:2.5, step:0.01 },
+    { t:'range', k:'contrast', l:'Contrast', min:0.5, max:2, step:0.01 },
+    { t:'check', k:'invert', l:'Invert colors' },
+    { t:'head', text:'Classic shader flags' },
+    { t:'vars', text:'MilkDrop 1-style switches. They only show on presets that use the built-in shader; presets with their own shader ignore them.' },
+    { t:'select', k:'brighten', l:'Brighten', o:TRI }, { t:'select', k:'darken', l:'Darken', o:TRI },
+    { t:'select', k:'solarize', l:'Solarize', o:TRI }, { t:'select', k:'wrap', l:'Wrap edges', o:TRI } ] }
+};
+
+const ME_DEF = {
+  motion:  { zoom:0, zoomexp:1, rot:0, warp:1, warpscale:1, warpspeed:1, dx:0, dy:0, sx:1, sy:1, cx:0, cy:0, bassZoom:0, trebSpin:0 },
+  trails:  { decay:0, gamma:1, dcenter:'preset', echo:false, echo_alpha:0.45, echo_zoom:1.6, echo_orient:0 },
+  wave:    { mode:'preset', alpha:1, scale:1, mystery:0, wx:0, wy:0, color:'preset', hue:200, additive:'preset', thick:'preset', dots:'preset' },
+  borders: { ob:0, ib:0, bhue:30, ba:0.6, mv:false, mv_x:16, mv_y:12, mv_l:1.2, mv_a:0.5, mvhue:190 },
+  filters: { hue:0, hueSpeed:0, sat:1, bright:1, contrast:1, invert:false, brighten:'preset', darken:'preset', solarize:'preset', wrap:'preset' }
+};
+
+const DEF = { v:4, engine:'hyper', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5, hyq:1 };
 let S;
-{ let j = null; try { const raw = localStorage.getItem('spectral-drift'); if (raw) j = JSON.parse(raw); } catch(e){}
-  if (!j || (j.v !== 2 && j.v !== 3)) j = {};
+function buildState(j){ let S;
+  if (!j || (j.v !== 2 && j.v !== 3 && j.v !== 4)) j = {};
   if (j.v === 2){ j.autoCycle = false; j.beatSwitch = false; }     // v2 cycled presets by default; v3 stays put unless asked
-  S = Object.assign({}, DEF, j); S.v = 3;
+  if (j.v === 2 || j.v === 3) j.engine = 'hyper';                   // one-time: open on the new Hyperspace engine
+  S = Object.assign({}, DEF, j); S.v = 4;
   S.avs = { preset: (j.avs && typeof j.avs.preset === 'string') ? j.avs.preset : 'Spiral tunnel', fx:{} }; S.reactor = { fx:{} }; S.classic = { fx:{} };
+  S.hyper = { scene: (j.hyper && HY_SCENES[j.hyper.scene]) ? j.hyper.scene : 'nebula', fx:{} };
+  for (const k in HY_SCENES) S.hyper.fx[k] = Object.assign({}, HY_SCENES[k].def, (j.hyper && j.hyper.fx && j.hyper.fx[k]) || {});
+  S.milkEd = (j.milkEd && typeof j.milkEd === 'object') ? j.milkEd : {};
+  S.milked = { fx: JSON.parse(JSON.stringify(ME_DEF)) };
   for (const k in AVS_DEF) S.avs.fx[k] = Object.assign({}, AVS_DEF[k], (j.avs && j.avs.fx && j.avs.fx[k]) || {});
   for (const k in RE_DEF) S.reactor.fx[k] = Object.assign({}, RE_DEF[k], (j.reactor && j.reactor.fx && j.reactor.fx[k]) || {});
   for (const k in CL_DEF) S.classic.fx[k] = Object.assign({}, CL_DEF[k], (j.classic && j.classic.fx && j.classic.fx[k]) || {});
+  return S;
 }
-function save(){ try { localStorage.setItem('spectral-drift', JSON.stringify(S)); } catch(e){} }
+{ let j = null; try { const raw = localStorage.getItem('spectral-drift'); if (raw) j = JSON.parse(raw); } catch(e){} S = buildState(j); }
+function save(){ if (WALL) return; try { localStorage.setItem('spectral-drift', JSON.stringify(S, (k, v) => k === 'milked' ? undefined : v)); } catch(e){} remoteQueue(); }
 let engine = 'reactor';
 
 /* ================= expression compiler (AVS-style per-point / per-pixel code) ================= */
@@ -582,8 +774,11 @@ if (window.cast && window.cast.framework && window.cast.framework.CastReceiverCo
       else if (d.cmd==='engine') setEngine(d.v);
       else if (d.cmd==='avs' && AVS_PRESETS[d.v]) avsApply(AVS_PRESETS[d.v], d.v);
       else if (d.cmd==='preset' && names.includes(d.v)) loadPreset(names.indexOf(d.v));
+      else if (d.cmd==='hyscene' && typeof hySetScene === 'function') hySetScene(d.v);
       else if (d.cmd==='motion'){ S.motion = clamp(+d.v||0, 0, 1); save(); }
-      else if (d.cmd==='color'){ S.colorPulse = clamp(+d.v||0, 0, 1); save(); } });
+      else if (d.cmd==='color'){ S.colorPulse = clamp(+d.v||0, 0, 1); save(); }
+      else if (d.cmd==='state') applyState(d.v);
+      else if (d.cmd==='img') applyImage(d.v); });
     ctx.start({ disableIdleTimeout:true }); document.body.classList.add('ui-hidden'); } catch(e){}
 }
 
@@ -704,6 +899,7 @@ function milkAudio(){
 }
 function renderMilk(){
   if (!vis) return;
+  hookMilkRunner();
   const a = milkAudio();
   try { vis.render(a ? { audioLevels: { timeByteArray:a, timeByteArrayL:a, timeByteArrayR:a } } : undefined); } catch(e){}
 }
@@ -736,15 +932,17 @@ function loadPreset(i, blend){
   if (!vis || !names.length) return;
   cur = ((i % names.length) + names.length) % names.length; const n = names[cur];
   try { vis.loadPreset(presets[n], blend == null ? S.blend : blend); } catch(e){ toast('Preset failed to compile: ' + n); return; }
-  S.preset = n; save(); lastSwitch = performance.now(); if (filtered.includes(n)) $('#presetSel').value = n; flash(n); castSend('preset', n);
+  S.preset = n; save(); castSend('preset', n); lastSwitch = performance.now(); if (filtered.includes(n)) $('#presetSel').value = n; if (engine==='milk') flash(n); bindMilkEdits();
 }
 function stepPreset(d){
+  if (engine==='hyper'){ hyStep(d); return; }
   if (engine==='avs'){ avsStep(d); return; }
   if (!names.length) return; const pool = filtered.length ? filtered : names; const n = pool[((pool.indexOf(names[cur]) + d) % pool.length + pool.length) % pool.length]; loadPreset(names.indexOf(n)); }
 function randPreset(){
+  if (engine==='hyper'){ hyRandomScene(); return; }
   if (engine==='avs'){ avsRandomize(); return; }
   if (!names.length) return; const pool = filtered.length ? filtered : names; let n; do { n = pool[Math.floor(Math.random()*pool.length)]; } while (pool.length>1 && n===names[cur]); loadPreset(names.indexOf(n)); }
-let flashT = 0; function flash(txt){ const f = $('#flash'); f.textContent = txt; f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(()=>f.classList.remove('show'), 2600); }
+let flashT = 0; function flash(txt){ if (WALL) return; const f = $('#flash'); f.textContent = txt; f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(()=>f.classList.remove('show'), 2600); }
 let toastT = 0; function toast(txt){ const t = $('#toast'); t.textContent = txt; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 3600); }
 let extraLoaded = false;
 function loadExtra(){
@@ -896,6 +1094,11 @@ function renderAVS(now, dt){
   // ---- Render effects
   const cx = W/2, cy = H/2, m = Math.min(W,H)/2, ar = W/(2*m), ay = H/(2*m); AV.hue = (AV.hue + F.color.speed + A.tTreb*F.color.treb) % 360;
   ctx.lineWidth = 1; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const pc = F.pic;
+  if (pc && pc.on && IMG.el){ const gate = pc.beatOnly ? A.beat : 1;
+    if (gate > 0.02){ const im = IMG.el, s = m*2*pc.size*(1 + pc.bounce*srcVal(pc.src)*0.6)/Math.max(im.width, im.height);
+      ctx.save(); ctx.globalAlpha = clamp(pc.alpha*gate, 0, 1); ctx.globalCompositeOperation = pc.blend; ctx.imageSmoothingEnabled = true;
+      ctx.translate(cx + pc.x*m*ar, cy + pc.y*m); ctx.rotate(t*pc.spin + pc.angle*Math.PI/180); ctx.scale(s, s); ctx.drawImage(im, -im.width/2, -im.height/2); ctx.restore(); } }
   const st = F.stars;
   if (st.on){ while (AV.stars.length < st.count) AV.stars.push({ x:(Math.random()*2-1)*st.spread, y:(Math.random()*2-1)*st.spread, z:Math.random() }); if (AV.stars.length > st.count) AV.stars.length = st.count;
     const sp = (0.004 + A.bass*0.03*st.bass)*st.speed*dt; ctx.fillStyle = '#fff';
@@ -1217,6 +1420,18 @@ const UI = {
       { t:'range', k:'wobble', l:'Wobble', min:0, max:2, step:0.05 },
       { t:'range', k:'wfreq', l:'Wobble lobes', min:1, max:24, step:1 },
       { t:'range', k:'spin', l:'Spin', min:-4, max:4, step:0.1 } ] },
+    pic: { label:'Picture (your image)', group:'Render', controls:[ ON, { t:'imgbtn' },
+      { t:'range', k:'size', l:'Size', min:0.05, max:2, step:0.01 },
+      { t:'range', k:'x', l:'X position', min:-1.5, max:1.5, step:0.01 },
+      { t:'range', k:'y', l:'Y position', min:-1, max:1, step:0.01 },
+      { t:'select', k:'src', l:'Pulses with', o:SRC_OPTS },
+      { t:'range', k:'bounce', l:'Pulse amount', min:0, max:3, step:0.05 },
+      { t:'range', k:'spin', l:'Spin', min:-4, max:4, step:0.05 },
+      { t:'range', k:'angle', l:'Angle', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°' },
+      { t:'range', k:'alpha', l:'Opacity', min:0, max:1, step:0.01 },
+      { t:'select', k:'blend', l:'Blend', o:[['source-over','Replace'],['lighter','Additive'],['lighten','Maximum'],['screen','Screen'],['difference','Subtractive'],['multiply','Multiply']] },
+      { t:'check', k:'beatOnly', l:'Only flash on beats' },
+      { t:'vars', text:'Drawn every frame, so Movement, Dynamic movement, Water and Mirror smear and warp it the way AVS Picture did. Low opacity with long trails gives ghosting.' } ] },
     part: { label:'Moving particle', group:'Render', controls:[ ON,
       { t:'select', k:'path', l:'Path', o:[['lissajous','Lissajous'],['circle','Circle'],['figure8','Figure 8'],['bounce','Bounce'],['spiral','Spiral']] },
       { t:'range', k:'count', l:'Particles', min:1, max:8, step:1 },
@@ -1225,6 +1440,8 @@ const UI = {
       { t:'range', k:'bass', l:'Bass grows size', min:0, max:20, step:0.5 },
       { t:'range', k:'ghosts', l:'Ghost trail', min:0, max:6, step:1 } ] }
   } },
+  hyper: { effects: HY_SCENES },
+  milked: { effects: ME_UI },
   reactor: { effects: {
     feedback: { label:'Feedback', controls:[
       { t:'range', k:'trail', l:'Trail (decay)', min:0.70, max:0.985, step:0.005, fmt:v=>v.toFixed(3) },
@@ -1291,6 +1508,10 @@ function renderPanel(eng){
     const id = eng + '-' + fxKey + '-' + c.k;
     if (c.t==='vars'){ const p = el('p','vars'); p.innerHTML = c.text; host.appendChild(p); return; }
     if (c.t==='head'){ const p = el('div','mathh'); p.textContent = c.text; host.appendChild(p); return; }
+    if (c.t==='imgbtn'){ const w = el('div','imgrow'), im = el('img','imgthumb'); im.src = IMG.thumb; im.alt = '';
+      const b = el('button','btn sm'); b.textContent = IMG.user ? 'Change image…' : 'Load image…'; b.addEventListener('click', () => $('#imgIn').click()); w.append(im, b);
+      if (IMG.user){ const x = el('button','btn sm'); x.textContent = 'Clear'; x.addEventListener('click', clearImage); w.appendChild(x); }
+      host.appendChild(w); return; }
     if (c.t==='check'){ const lab = el('label','chk' + (c.main ? ' on-main' : '')); const inp = el('input'); inp.type = 'checkbox'; inp.id = id; inp.checked = !!st[c.k];
       inp.addEventListener('change', () => { st[c.k] = inp.checked; changed(eng, fxKey, c.k); }); lab.append(inp, document.createTextNode(' ' + c.l)); host.appendChild(lab); return; }
     if (c.t==='select'){ const w = el('div','lab-sel'); const sp = el('span'); sp.textContent = c.l; const sel = el('select'); sel.id = id;
@@ -1306,6 +1527,7 @@ function renderPanel(eng){
   if (eng==='avs') compileFormulas(fxKey);
 }
 function changed(eng, fx, k){
+  if (eng==='milked'){ S.milkEd[S.preset] = S.milked.fx; save(); const tg = $('#milkEdTag'); if (tg) tg.textContent = 'edited · saved with this preset'; return; }
   save();
   if (k==='on') refreshFxList(eng);
   if (eng==='avs'){
@@ -1316,6 +1538,370 @@ function changed(eng, fx, k){
   }
 }
 
+/* ================= image source: Hyperspace image scenes + AVS Picture ================= */
+const IMG = { el:null, user:false, ver:0, thumb:'' };
+function placeholderImage(){
+  const c = el('canvas'); c.width = c.height = 512; const g = c.getContext('2d');
+  const grd = g.createRadialGradient(256,256,8,256,256,370); grd.addColorStop(0,'#fff1c9'); grd.addColorStop(0.18,'#ff9a5a'); grd.addColorStop(0.42,'#c0306f'); grd.addColorStop(0.7,'#3a1f7a'); grd.addColorStop(1,'#07080c');
+  g.fillStyle = grd; g.fillRect(0,0,512,512);
+  g.globalCompositeOperation = 'lighter';
+  for (let i=0;i<16;i++){ g.strokeStyle = 'hsla(' + (170 + i*14) + ',90%,60%,0.35)'; g.lineWidth = 2.5; g.beginPath(); for (let k=0;k<=120;k++){ const a = k/120*6.2832, rr = 30 + i*15 + 6*Math.sin(a*6 + i); k ? g.lineTo(256+Math.cos(a)*rr, 256+Math.sin(a)*rr) : g.moveTo(256+Math.cos(a)*rr, 256+Math.sin(a)*rr); } g.stroke(); }
+  for (let i=0;i<260;i++){ g.fillStyle = 'rgba(255,255,255,' + (0.2 + Math.random()*0.8).toFixed(2) + ')'; const s = Math.random() < 0.1 ? 2.5 : 1.2; g.fillRect(Math.random()*512, Math.random()*512, s, s); }
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = 'rgba(7,8,12,.6)'; g.fillRect(106,232,300,48);
+  g.fillStyle = '#e9ecf4'; g.font = '700 24px "Chakra Petch", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('LOAD AN IMAGE', 256, 257);
+  return c;
+}
+function makeThumb(){ const t = el('canvas'); t.width = t.height = 96; const g = t.getContext('2d'), s = IMG.el, k = Math.max(96/s.width, 96/s.height); g.drawImage(s, (96 - s.width*k)/2, (96 - s.height*k)/2, s.width*k, s.height*k); IMG.thumb = t.toDataURL('image/jpeg', 0.7); }
+function useImage(source, user){
+  const k = Math.min(1, 1024/Math.max(source.width||1, source.height||1)), c = el('canvas');
+  c.width = Math.max(1, Math.round(source.width*k)); c.height = Math.max(1, Math.round(source.height*k)); c.getContext('2d').drawImage(source, 0, 0, c.width, c.height);
+  IMG.el = c; IMG.user = user; IMG.ver++; makeThumb(); refreshImagePanels(); remoteImage();
+}
+function loadImageURL(url, persist){
+  const im = new Image();
+  im.onload = () => {
+    useImage(im, true);
+    if (persist){
+      try { const k = Math.min(1, 768/Math.max(im.width, im.height)), c = el('canvas'); c.width = Math.round(im.width*k); c.height = Math.round(im.height*k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); localStorage.setItem('spectral-drift-img', c.toDataURL('image/jpeg', 0.85)); toast('Image loaded'); }
+      catch(e){ toast('Image loaded (too large to remember after a restart)'); }
+    }
+  };
+  im.onerror = () => toast('Could not read that image');
+  im.src = url;
+}
+function clearImage(){ try { localStorage.removeItem('spectral-drift-img'); } catch(e){} IMG.el = placeholderImage(); IMG.user = false; IMG.ver++; makeThumb(); refreshImagePanels(); remoteImage(); }
+function refreshImagePanels(){ if (typeof renderPanel !== 'function' || !UI) return; if (engine==='hyper') renderPanel('hyper'); if (engine==='avs' && $('#fxsel-avs').value==='pic') renderPanel('avs'); }
+IMG.el = placeholderImage(); IMG.ver = 1; makeThumb();
+
+/* ================= Hyperspace engine: WebGL2 feedback shader, infinite zoom, image scenes ================= */
+const HY_VERT = `#version 300 es
+void main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p*2.0 - 1.0, 0.0, 1.0); }`;
+const HY_FRAG = `#version 300 es
+precision highp float;
+uniform sampler2D uPrev, uImg;
+uniform vec2 uRes, uCenter;
+uniform float uTime, uZoom, uFlight, uRot, uBass, uMid, uTreb, uLevel, uBeat;
+uniform int uScene, uFirst;
+uniform float uTwist, uArms, uDetail, uOct, uStars, uStreak, uCore, uTrail, uFbZoom, uFbRot, uWarp, uKal, uNest, uLevelRot, uImgScale, uInject, uDepth, uWobble, uImgAsp;
+uniform vec3 uPa, uPb, uPc, uPd;
+out vec4 fragColor;
+const float TAU = 6.28318530718;
+mat2 rot2(float a){ float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+vec3 pal(float t){ return uPa + uPb*cos(TAU*(uPc*t + uPd)); }
+float hash(vec3 p){ p = fract(p*vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y)*p.z); }
+float vnoise(vec3 p){
+  vec3 i = floor(p), f = fract(p), u = f*f*(3.0 - 2.0*f);
+  float a = hash(i), b = hash(i + vec3(1,0,0)), c = hash(i + vec3(0,1,0)), d = hash(i + vec3(1,1,0));
+  float e = hash(i + vec3(0,0,1)), g = hash(i + vec3(1,0,1)), h = hash(i + vec3(0,1,1)), k = hash(i + vec3(1,1,1));
+  return mix(mix(mix(a, b, u.x), mix(c, d, u.x), u.y), mix(mix(e, g, u.x), mix(h, k, u.x), u.y), u.z);
+}
+float fbm(vec3 p){
+  float s = 0.0, a = 0.5, n = 0.0;
+  for (int i = 0; i < 6; i++){ if (float(i) >= uOct) break; s += a*vnoise(p); n += a; p = p*2.02 + vec3(3.1, 1.7, 5.3); a *= 0.5; }
+  return s/max(n, 1e-3);
+}
+vec2 kal(vec2 p, float n){ if (n < 1.5) return p; float s = TAU/n, a = mod(atan(p.y, p.x), s); a = abs(a - 0.5*s); return length(p)*vec2(cos(a), sin(a)); }
+// stars laid out in log-polar cells: constant size in log space = they grow as they fly outward
+vec3 stars(float u, float a, float dens, float gain){
+  vec3 acc = vec3(0.0);
+  for (int L = 0; L < 3; L++){
+    float fl = float(L), sc = 5.0 + fl*4.0, na = 12.0 + fl*10.0;
+    vec2 g = vec2(u*sc, a/TAU*na + fl*0.31), id = floor(g), f = fract(g);
+    id.y = mod(id.y, na);
+    float h = hash(vec3(id, fl*7.0 + 1.0));
+    if (h < dens){
+      vec2 c = vec2(hash(vec3(id, fl + 11.0)), hash(vec3(id, fl + 23.0)))*0.7 + 0.15, d = f - c;
+      d.x *= 1.0 - 0.85*uStreak;
+      float tw = 0.6 + 0.4*sin(uTime*(2.0 + h*5.0) + h*40.0);
+      acc += exp(-dot(d, d)*(260.0 + fl*120.0))*mix(vec3(0.75, 0.85, 1.0), pal(h*3.0), 0.4)*tw;
+    }
+  }
+  return acc*gain;
+}
+vec2 imgUV(vec2 q, float h){ return vec2(q.x/(2.0*h*uImgAsp) + 0.5, 0.5 - q.y/(2.0*h)); }
+
+vec3 sceneNebula(vec2 p){
+  float r = length(p) + 1e-4, a = atan(p.y, p.x), lr = log(r), u = lr - uZoom;
+  float k = max(1.0, floor(uArms + 0.5)), aa = a + lr*uTwist;
+  vec2 cs = vec2(cos(aa*k), sin(aa*k))*uDetail;
+  float n1 = fbm(vec3(cs, u*uDetail*0.8 + 17.0)), n2 = fbm(vec3(cs*1.9 + 3.0, u*uDetail*1.7 - uTime*0.02));
+  float gas = smoothstep(0.3, 0.85, n1), dust = smoothstep(0.32, 0.78, n2);
+  vec3 col = pal(n1*1.4 + u*0.07)*gas*(0.35 + 1.1*dust) + pal(n2*0.8 + 0.45)*pow(dust, 4.0)*0.7;
+  col *= 0.75 + 0.55*uLevel + 0.45*uBeat;
+  col += stars(u, aa, uStars, 0.6 + 1.6*uTreb);
+  col *= smoothstep(0.0, 0.1, r);
+  return col + pal(0.05)*uCore*0.02/(r + 0.04)*(0.7 + uLevel);
+}
+vec3 sceneHyperspace(vec2 p){
+  float r = length(p) + 1e-4, a = atan(p.y, p.x), lr = log(r), u = lr - uZoom, aa = a + lr*uTwist;
+  vec3 col = stars(u, aa, uStars, 1.2 + 2.0*uTreb) + stars(u*1.7 + 3.1, aa + 1.3, uStars*0.8, 0.8 + uTreb);
+  float n = fbm(vec3(cos(aa)*uDetail, sin(aa)*uDetail, u*2.5));
+  col += pal(0.55 + n*0.4)*pow(n, 3.0)*smoothstep(0.05, 0.8, r)*(0.6 + 1.2*uBass);
+  col *= smoothstep(0.0, 0.06, r);
+  return col + pal(0.6)*uCore*0.025/(r + 0.03)*(0.6 + uLevel + uBeat);
+}
+vec3 sceneGalaxy(vec2 p){
+  float r = length(p) + 1e-4, a = atan(p.y, p.x), lr = log(r), u = lr - uZoom;
+  float k = max(1.0, floor(uArms + 0.5)), ph = k*(a - uTwist*u), arm = pow(0.5 + 0.5*cos(ph), 2.5);
+  float n = fbm(vec3(vec2(cos(a), sin(a))*uDetail*1.3, u*uDetail));
+  float dust = smoothstep(0.42, 0.72, fbm(vec3(cos(ph/k)*2.6, sin(ph/k)*2.6, u*3.0 + 4.0)));
+  vec3 col = pal(0.12 + n*0.6 + u*0.04)*arm*(0.35 + 0.9*n)*(1.0 - 0.7*dust)*(0.8 + 0.6*uLevel) + pal(0.3)*pow(n, 4.0)*0.35;
+  col += stars(u, a, uStars, 0.6 + 1.4*uTreb);
+  col *= smoothstep(0.0, 0.07, r);
+  return col + pal(0.02)*uCore*0.03/(r + 0.035)*(0.7 + uLevel + 0.5*uBeat);
+}
+vec3 sceneWormhole(vec2 p){
+  float r = length(p) + 1e-4, a = atan(p.y, p.x), z = uDepth*0.3/r + uFlight;
+  float k = max(1.0, floor(uArms + 0.5)), aa = a*k + z*uTwist;
+  float n = fbm(vec3(vec2(cos(aa), sin(aa))*uDetail, z*1.3)), rings = 0.5 + 0.5*sin(z*10.0 + n*6.0 - uTime);
+  vec3 col = pal(n + z*0.03)*(0.25 + 1.2*n)*(0.45 + 0.55*rings)*(0.8 + 0.6*uBass + 0.5*uBeat);
+  col *= smoothstep(0.015, 0.45, r);
+  return col + pal(0.7)*uCore*0.012/(r + 0.01)*(0.6 + uLevel);
+}
+// volumetric fly-through of a folded fractal field (kaliset): space keeps generating as you move
+vec3 sceneVoid(vec2 p){
+  vec3 dir = normalize(vec3(p*1.1, 1.0));
+  dir.xz = rot2(uTime*0.021)*dir.xz; dir.xy = rot2(uTime*0.013)*dir.xy;
+  vec3 ro = vec3(0.4, 0.7, uFlight*0.6);
+  float s = 0.12, fade = 1.0, fold = 0.45 + uDetail*0.02;
+  vec3 acc = vec3(0.0);
+  for (int i = 0; i < 9; i++){
+    vec3 q = abs(vec3(0.9) - mod(ro + dir*s*0.6, vec3(1.8)));
+    float pl = 0.0, sum = 0.0;
+    for (int j = 0; j < 11; j++){ q = abs(q)/dot(q, q) - fold; float l = length(q); sum += abs(l - pl); pl = l; }
+    acc += fade*mix(vec3(s, s*s, s*s*s), pal(s*1.5 + 0.2), 0.55)*sum*sum*sum*0.00045;
+    fade *= 0.74; s += 0.12;
+  }
+  return acc*(0.6 + 0.6*uLevel + 0.4*uBeat);
+}
+// Droste: the image nested inside itself forever, zooming in
+vec3 sceneDroste(vec2 p){
+  float S = max(1.25, uNest), L = log(S), h = 0.45*uImgScale;
+  vec2 pz = p*exp(-mod(uZoom, L));
+  float rc = max(abs(pz.x)/uImgAsp, abs(pz.y)) + 1e-6, m = floor(log(h/rc)/L), lev = m + floor(uZoom/L);
+  vec2 q = rot2(lev*uLevelRot)*(pz*exp(m*L));
+  vec2 g = exp(m*L)/(2.0*h)*vec2(1.0/uImgAsp, -1.0);
+  vec3 col = textureGrad(uImg, imgUV(q, h), dFdx(pz)*g, dFdy(pz)*g).rgb;
+  float e = max(abs(q.x)/(h*uImgAsp), abs(q.y)/h);
+  col += pal(lev*0.11)*smoothstep(0.95, 1.0, e)*uCore*0.5;
+  return col*(0.85 + 0.4*uLevel + 0.35*uBeat);
+}
+vec3 sceneKaleido(vec2 p){
+  vec2 q = kal(rot2(uTime*0.05*uTwist)*p, max(2.0, floor(uArms + 0.5)));
+  vec2 t = q*uDetail/uImgScale*(1.0 + 0.25*uBass) + vec2(uFlight*0.15, uFlight*0.1) + 0.5;
+  return texture(uImg, t).rgb*(0.85 + 0.4*uLevel + 0.35*uBeat);
+}
+vec3 sceneImgTunnel(vec2 p){
+  float r = length(p) + 1e-4, a = atan(p.y, p.x), z = uDepth*0.3/r + uFlight, k = 2.0*max(1.0, floor(uArms + 0.5));
+  vec2 t = vec2(a/TAU*k + z*uTwist*0.05, z*0.5/uImgScale);
+  vec2 da = vec2(dFdx(a), dFdy(a)); da = mod(da + 3.14159265, TAU) - 3.14159265;
+  vec2 dz = vec2(dFdx(z), dFdy(z));
+  vec3 col = textureGrad(uImg, t, vec2(da.x/TAU*k, dz.x*0.5/uImgScale), vec2(da.y/TAU*k, dz.y*0.5/uImgScale)).rgb;
+  col *= smoothstep(0.015, 0.4, r)*(0.8 + 0.5*uBass + 0.4*uBeat);
+  return col + pal(0.6)*uCore*0.01/(r + 0.01);
+}
+void main(){
+  vec2 fc = gl_FragCoord.xy, uv = fc/uRes;
+  float asp = uRes.x/uRes.y;
+  vec2 p0 = (fc - 0.5*uRes)/uRes.y - uCenter + uWobble*0.15*vec2(sin(uTime*0.37), cos(uTime*0.29));
+  vec2 p = kal(rot2(uRot)*p0, uKal);
+  vec2 c0 = vec2(0.5) + uCenter*vec2(1.0/asp, 1.0);
+  if (uScene == 7){
+    // liquid paint: the image is injected into a swirling feedback loop and smeared by the flow
+    vec2 q = uv - c0; q.x *= asp;
+    float tt = uTime*0.1;
+    vec2 fl = vec2(vnoise(vec3(q*2.5, tt)) - 0.5, vnoise(vec3(q*2.5 + 9.1, tt + 3.0)) - 0.5);
+    q = rot2(uFbRot + 0.02*uBass)*q/(uFbZoom + 0.01*uBass) + fl*uWarp*0.012;
+    q.x /= asp;
+    vec3 prev = texture(uPrev, q + c0).rgb;
+    vec3 im = texture(uImg, imgUV(p, 0.5*uImgScale)).rgb;
+    float inj = uFirst > 0 ? 1.0 : clamp(uInject*0.05 + uBeat*uInject*0.35, 0.0, 1.0);
+    fragColor = vec4(mix(prev*uTrail, im, inj), 1.0);
+    return;
+  }
+  vec3 src;
+  if (uScene == 0) src = sceneNebula(p);
+  else if (uScene == 1) src = sceneHyperspace(p);
+  else if (uScene == 2) src = sceneGalaxy(p);
+  else if (uScene == 3) src = sceneWormhole(p);
+  else if (uScene == 4) src = sceneVoid(p);
+  else if (uScene == 5) src = sceneDroste(p);
+  else if (uScene == 6) src = sceneKaleido(p);
+  else src = sceneImgTunnel(p);
+  vec2 q = uv - c0; q.x *= asp; q = rot2(uFbRot)*q/uFbZoom;
+  if (uWarp > 0.0){ float tt = uTime*0.12; q += uWarp*0.006*vec2(vnoise(vec3(q*3.0, tt)) - 0.5, vnoise(vec3(q*3.0 + 5.2, tt)) - 0.5); }
+  q.x /= asp;
+  vec3 prev = uFirst > 0 ? vec3(0.0) : texture(uPrev, q + c0).rgb;
+  // blend, not max: the warped previous frame visibly smears into the new one (MilkDrop-style echo), while fresh detail keeps most of its punch
+  fragColor = vec4(max(mix(src, prev, uTrail), src*0.65), 1.0);
+}`;
+const HY_DISP = `#version 300 es
+precision highp float;
+uniform sampler2D uTex;
+uniform vec2 uRes;
+uniform float uHue, uSat, uBright, uContrast, uChroma, uVig;
+out vec4 fragColor;
+vec3 hueRot(vec3 c, float h){
+  const mat3 toY = mat3(0.299, 0.596, 0.211, 0.587, -0.274, -0.523, 0.114, -0.322, 0.312);
+  const mat3 toR = mat3(1.0, 1.0, 1.0, 0.956, -0.272, -1.106, 0.621, -0.647, 1.703);
+  vec3 y = toY*c; float cs = cos(h), sn = sin(h); y.yz = vec2(cs*y.y - sn*y.z, sn*y.y + cs*y.z); return toR*y;
+}
+void main(){
+  vec2 uv = gl_FragCoord.xy/uRes, d = (uv - 0.5)*uChroma*0.02;
+  vec3 c = vec3(texture(uTex, uv + d).r, texture(uTex, uv).g, texture(uTex, uv - d).b);
+  c = hueRot(c, uHue);
+  float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, uSat);
+  c *= uBright; c = (c - 0.5)*uContrast + 0.5;
+  vec2 v = uv - 0.5; c *= 1.0 - uVig*dot(v, v)*1.8;
+  fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+}`;
+const HY_PALS = {
+  nebula:  [[0.45,0.35,0.55],[0.45,0.35,0.45],[1,1,1],[0.10,0.33,0.55]],
+  aurora:  [[0.30,0.55,0.50],[0.30,0.45,0.40],[1,1,1],[0.55,0.25,0.35]],
+  ember:   [[0.60,0.35,0.20],[0.40,0.30,0.20],[1,1,0.5],[0.00,0.10,0.20]],
+  ice:     [[0.45,0.60,0.75],[0.35,0.35,0.30],[1,1,1],[0.60,0.60,0.65]],
+  rainbow: [[0.5,0.5,0.5],[0.5,0.5,0.5],[1,1,1],[0.00,0.33,0.67]],
+  moon:    [[0.55,0.55,0.62],[0.45,0.45,0.45],[1,1,1],[0.00,0.05,0.12]]
+};
+const HY_U = ['uPrev','uImg','uRes','uCenter','uTime','uZoom','uFlight','uRot','uBass','uMid','uTreb','uLevel','uBeat','uScene','uFirst','uTwist','uArms','uDetail','uOct','uStars','uStreak','uCore','uTrail','uFbZoom','uFbRot','uWarp','uKal','uNest','uLevelRot','uImgScale','uInject','uDepth','uWobble','uImgAsp','uPa','uPb','uPc','uPd'];
+const HY_UD = ['uTex','uRes','uHue','uSat','uBright','uContrast','uChroma','uVig'];
+const hyCv = $('#hyper');
+const HY = { tried:false, ok:false, gl:null, fb:[], tx:[], W:0, H:0, cur:0, frame:0, zoom:0, flight:0, rot:0, hue:0, imgVer:0, imgAsp:1, imgTex:null, pF:null, pD:null, uF:{}, uD:{}, t0:performance.now() };
+function hyProgram(gl, fsrc){
+  const mk = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh) || 'compile failed'); return sh; };
+  const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, HY_VERT)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fsrc)); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link failed');
+  return p;
+}
+function hyFail(msg){ HY.ok = false; const o = $('#engineSel').querySelector('[value=hyper]'); if (o) o.disabled = true; const n = $('#hyNote'); if (n) n.textContent = msg; }
+function initHyper(){
+  if (HY.tried) return HY.ok; HY.tried = true;
+  const gl = hyCv.getContext('webgl2', { antialias:false, depth:false, stencil:false, premultipliedAlpha:false, alpha:false });
+  if (!gl){ hyFail('Hyperspace needs WebGL2, which this browser refused.'); return false; }
+  try {
+    HY.pF = hyProgram(gl, HY_FRAG); HY.pD = hyProgram(gl, HY_DISP);
+    HY_U.forEach(n => { HY.uF[n] = gl.getUniformLocation(HY.pF, n); }); HY_UD.forEach(n => { HY.uD[n] = gl.getUniformLocation(HY.pD, n); });
+  } catch(e){ hyFail('Hyperspace shader failed: ' + e.message); console.error(e); return false; }
+  HY.gl = gl; HY.ok = true;
+  HY.imgTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, HY.imgTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  hySize(); return true;
+}
+function hySize(){
+  if (!HY.ok) return; const gl = HY.gl, r = stageRect(), d = Math.min(window.devicePixelRatio||1, 1.5);
+  hyCv.width = Math.max(1, Math.round(r.w*d)); hyCv.height = Math.max(1, Math.round(r.h*d));
+  const q = [0.45, 0.7, 1.0][S.hyq|0] || 0.7, W = Math.max(16, Math.round(hyCv.width*q)), H = Math.max(16, Math.round(hyCv.height*q));
+  if (W === HY.W && H === HY.H) return;
+  HY.tx.forEach(t => gl.deleteTexture(t)); HY.fb.forEach(f => gl.deleteFramebuffer(f)); HY.tx = []; HY.fb = [];
+  for (let i=0;i<2;i++){
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+    gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); HY.tx.push(t); HY.fb.push(f);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); HY.W = W; HY.H = H; HY.frame = 0;
+}
+function hyUploadImage(){
+  const gl = HY.gl; gl.bindTexture(gl.TEXTURE_2D, HY.imgTex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, IMG.el); gl.generateMipmap(gl.TEXTURE_2D);
+  HY.imgVer = IMG.ver; HY.imgAsp = IMG.el.width/IMG.el.height;
+}
+function hySetScene(key){ castSend('hyscene', key);
+  if (!HY_SCENES[key]) return;
+  S.hyper.scene = key; save(); HY.frame = 0;
+  const sel = $('#fxsel-hyper'); if (sel.value !== key) sel.value = key;
+  renderPanel('hyper'); flash('Hyperspace · ' + HY_SCENES[key].label);
+}
+function hyStep(d){ const keys = Object.keys(HY_SCENES); let i = keys.indexOf(S.hyper.scene); hySetScene(keys[((i + d) % keys.length + keys.length) % keys.length]); }
+function hyRandomScene(){ const keys = Object.keys(HY_SCENES).filter(k => k !== S.hyper.scene); hySetScene(keys[Math.floor(Math.random()*keys.length)]); }
+function hyMutate(){
+  const key = S.hyper.scene, v = S.hyper.fx[key];
+  UI.hyper.effects[key].controls.forEach(c => {
+    if (c.t==='range' && !c.keep){ const steps = Math.round((c.max - c.min)/c.step), mid = (v[c.k] - c.min)/(c.max - c.min);
+      const x = clamp(mid + (Math.random()*2 - 1)*0.35, 0, 1); v[c.k] = +(c.min + Math.round(x*steps)*c.step).toFixed(4); }
+    else if (c.t==='select' && c.k==='pal' && Math.random() < 0.5){ v.pal = c.o[Math.floor(Math.random()*c.o.length)][0]; }
+  });
+  save(); renderPanel('hyper'); flash('Hyperspace · mutated');
+}
+function hyReset(){ const key = S.hyper.scene; S.hyper.fx[key] = Object.assign({}, HY_SCENES[key].def); save(); renderPanel('hyper'); HY.frame = 0; flash('Hyperspace · reset'); }
+function renderHyper(now, dt){
+  if (!HY.ok) return;
+  const gl = HY.gl, key = S.hyper.scene, sc = HY_SCENES[key], v = S.hyper.fx[key], sec = dt/60;
+  if (HY.imgVer !== IMG.ver) hyUploadImage();
+  const val = k => (v[k] != null ? v[k] : (sc.def[k] != null ? sc.def[k] : HY_BASE[k]));
+  const spd = val('speed') + val('bass')*(A.bass*1.2 + A.beat*0.6);
+  HY.zoom += spd*sec*0.32; HY.flight += spd*sec*0.5; HY.rot += val('spin')*sec*0.35;
+  HY.hue = (HY.hue + val('hueSpeed')*sec) % 360;
+  const src = HY.cur, dst = 1 - src, U = HY.uF, P = HY_PALS[val('pal')] || HY_PALS.nebula, t = (now - HY.t0)/1000;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, HY.fb[dst]); gl.viewport(0, 0, HY.W, HY.H); gl.useProgram(HY.pF);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, HY.tx[src]); gl.uniform1i(U.uPrev, 0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, HY.imgTex); gl.uniform1i(U.uImg, 1);
+  gl.uniform2f(U.uRes, HY.W, HY.H); gl.uniform2f(U.uCenter, val('cx'), val('cy'));
+  gl.uniform1f(U.uTime, t); gl.uniform1f(U.uZoom, HY.zoom); gl.uniform1f(U.uFlight, HY.flight); gl.uniform1f(U.uRot, HY.rot);
+  gl.uniform1f(U.uBass, A.bass); gl.uniform1f(U.uMid, A.mid); gl.uniform1f(U.uTreb, A.treb); gl.uniform1f(U.uLevel, A.level); gl.uniform1f(U.uBeat, A.beat);
+  gl.uniform1i(U.uScene, sc.id); gl.uniform1i(U.uFirst, HY.frame < 2 ? 1 : 0);
+  gl.uniform1f(U.uTwist, val('twist')); gl.uniform1f(U.uArms, val('arms')); gl.uniform1f(U.uDetail, val('detail')); gl.uniform1f(U.uOct, val('oct'));
+  gl.uniform1f(U.uStars, val('stars')); gl.uniform1f(U.uStreak, clamp(Math.abs(spd)*0.3, 0, 0.9)); gl.uniform1f(U.uCore, val('core'));
+  gl.uniform1f(U.uTrail, key==='liquid' ? val('keep') : val('trail')); gl.uniform1f(U.uFbZoom, val('fbzoom')); gl.uniform1f(U.uFbRot, val('fbrot')); gl.uniform1f(U.uWarp, val('warp'));
+  gl.uniform1f(U.uKal, val('kal')); gl.uniform1f(U.uNest, val('nest')); gl.uniform1f(U.uLevelRot, val('levelRot')*Math.PI/180);
+  gl.uniform1f(U.uImgScale, val('imgScale')); gl.uniform1f(U.uInject, val('inject')); gl.uniform1f(U.uDepth, val('depth')); gl.uniform1f(U.uWobble, val('wobble')); gl.uniform1f(U.uImgAsp, HY.imgAsp);
+  gl.uniform3fv(U.uPa, P[0]); gl.uniform3fv(U.uPb, P[1]); gl.uniform3fv(U.uPc, P[2]); gl.uniform3fv(U.uPd, P[3]);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, hyCv.width, hyCv.height); gl.useProgram(HY.pD);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, HY.tx[dst]);
+  const D = HY.uD; gl.uniform1i(D.uTex, 0); gl.uniform2f(D.uRes, hyCv.width, hyCv.height);
+  gl.uniform1f(D.uHue, (val('hue') + HY.hue)*Math.PI/180); gl.uniform1f(D.uSat, val('sat')); gl.uniform1f(D.uBright, val('bright')*(0.92 + 0.16*A.level));
+  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 2*A.beat)); gl.uniform1f(D.uVig, val('vig'));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  HY.cur = dst; HY.frame++;
+}
+
+/* ================= MilkDrop live preset editor (Winamp's M menu, as dials) ================= */
+const meTri = (v, cur) => v==='on' ? 1 : v==='off' ? 0 : cur;
+function meHue(h){ h = ((h % 360) + 360) % 360 / 60; const x = 1 - Math.abs(h % 2 - 1); return h < 1 ? [1,x,0] : h < 2 ? [x,1,0] : h < 3 ? [0,1,x] : h < 4 ? [0,x,1] : h < 5 ? [x,0,1] : [1,0,x]; }
+function milkEditDefaults(){ return JSON.parse(JSON.stringify(ME_DEF)); }
+function bindMilkEdits(){
+  const saved = S.milkEd[S.preset], fx = milkEditDefaults();
+  if (saved) for (const g in fx) Object.assign(fx[g], saved[g] || {});
+  S.milked = { fx };
+  const tag = $('#milkEdTag'); if (tag) tag.textContent = saved ? 'edited · saved with this preset' : 'as authored';
+  if (UI && UI.milked && $('#fxsel-milked').options.length) renderPanel('milked');
+}
+function resetMilkEdits(){ delete S.milkEd[S.preset]; save(); bindMilkEdits(); flash('Edits cleared for this preset'); }
+function applyMilkEdits(f){
+  const E = S.milked && S.milked.fx; if (!E) return;
+  const m = E.motion, t = E.trails, w = E.wave, b = E.borders, x = E.filters;
+  f.zoom = f.zoom + m.zoom + m.bassZoom*A.bass*0.08; f.zoomexp *= m.zoomexp; f.rot += m.rot + m.trebSpin*A.treb*0.08;
+  f.warp *= m.warp; f.warpscale *= m.warpscale; f.warpanimspeed *= m.warpspeed;
+  f.dx += m.dx; f.dy += m.dy; f.sx *= m.sx; f.sy *= m.sy; f.cx += m.cx; f.cy += m.cy;
+  f.decay = clamp(f.decay + t.decay, 0.7, 1); f.gammaadj *= t.gamma; f.darken_center = meTri(t.dcenter, f.darken_center);
+  if (t.echo){ f.echo_alpha = t.echo_alpha; f.echo_zoom = t.echo_zoom; f.echo_orient = t.echo_orient|0; }
+  if (w.mode !== 'preset') f.wave_mode = +w.mode;
+  f.wave_a *= w.alpha; f.wave_scale *= w.scale; f.wave_mystery += w.mystery; f.wave_x += w.wx; f.wave_y += w.wy;
+  if (w.color !== 'preset'){ const c = meHue(w.color==='rainbow' ? tSec*45 : w.hue); f.wave_r = c[0]; f.wave_g = c[1]; f.wave_b = c[2]; }
+  f.additivewave = meTri(w.additive, f.additivewave); f.wave_thick = meTri(w.thick, f.wave_thick); f.wave_dots = meTri(w.dots, f.wave_dots);
+  if (b.ob > 0){ const c = meHue(b.bhue); f.ob_size = b.ob; f.ob_r = c[0]; f.ob_g = c[1]; f.ob_b = c[2]; f.ob_a = b.ba; }
+  if (b.ib > 0){ const c = meHue(b.bhue + 180); f.ib_size = b.ib; f.ib_r = c[0]; f.ib_g = c[1]; f.ib_b = c[2]; f.ib_a = b.ba; }
+  if (b.mv){ const c = meHue(b.mvhue); f.mv_x = b.mv_x; f.mv_y = b.mv_y; f.mv_l = b.mv_l; f.mv_a = b.mv_a; f.mv_r = c[0]; f.mv_g = c[1]; f.mv_b = c[2]; }
+  f.brighten = meTri(x.brighten, f.brighten); f.darken = meTri(x.darken, f.darken); f.solarize = meTri(x.solarize, f.solarize); f.wrap = meTri(x.wrap, f.wrap);
+}
+function hookMilkRunner(){
+  const R = vis && vis.renderer, run = R && R.presetEquationRunner;
+  if (!run || run.__sd) return;
+  const orig = run.runFrameEquations.bind(run);
+  run.runFrameEquations = function(g){ orig(g); try { applyMilkEdits(this.mdVSFrame); } catch(e){} };
+  run.__sd = true;
+}
+function milkFilter(){
+  const x = S.milked && S.milked.fx && S.milked.fx.filters; if (!x) return '';
+  const h = (x.hue + tSec*x.hueSpeed) % 360, parts = [];
+  if (h) parts.push('hue-rotate(' + h.toFixed(1) + 'deg)'); if (x.sat !== 1) parts.push('saturate(' + x.sat + ')');
+  if (x.bright != null && x.bright !== 1) parts.push('brightness(' + x.bright + ')'); if (x.contrast != null && x.contrast !== 1) parts.push('contrast(' + x.contrast + ')'); if (x.invert === true) parts.push('invert(1)');
+  return parts.join(' ');
+}
+
 /* ================= stage sizing, engine switch ================= */
 function stageRect(){ const r = $('#stage').getBoundingClientRect(); return { w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) }; }
 function resize(){
@@ -1323,20 +1909,28 @@ function resize(){
   if (vis) { try { vis.setRendererSize(r.w, r.h, { pixelRatio: pixelRatio() }); } catch(e){} }
   const d = Math.min(window.devicePixelRatio||1, 1.5);
   rc.width = fb.width = Math.round(r.w*d); rc.height = fb.height = Math.round(r.h*d);
-  avsCv.width = clCv.width = Math.round(r.w*d); avsCv.height = clCv.height = Math.round(r.h*d); avsSize();
+  avsCv.width = clCv.width = Math.round(r.w*d); avsCv.height = clCv.height = Math.round(r.h*d); avsSize(); hySize();
   const sp = $('#spec'); const sr = sp.getBoundingClientRect(); sp.width = Math.round(sr.width*d); sp.height = Math.round(58*d);
+  reportCastSlot();
+}
+function reportCastSlot(){
+  if (!android || typeof android.castSlot !== 'function') return;
+  const el = $('#castSlot'), r = el.getBoundingClientRect(), vis = !el.hidden && !document.body.classList.contains('ui-hidden') && r.width > 0 && r.height > 0;
+  try { android.castSlot(vis, r.left, r.top, r.width, r.height); } catch(e){}
 }
 new ResizeObserver(resize).observe($('#stage'));
 window.addEventListener('resize', resize);
 function setEngine(choice){
   if (!ENGINES.includes(choice)) choice = 'milk';
   S.engine = choice; save(); castSend('engine', choice);
-  const e = engine = (choice==='milk' && !milkOK) ? 'avs' : choice;
+  if (choice==='hyper') initHyper();
+  const e = engine = ((choice==='milk' && !milkOK) || (choice==='hyper' && !HY.ok)) ? 'avs' : choice;
   ENGINES.forEach(k => { $('#'+k).hidden = k!==e; $('#sec-'+k).hidden = k!==e; const s = k==='milk' ? $('#presetSel') : $('#fxsel-'+k); s.hidden = k!==e; });
-  $('#engineSel').value = e; $('#fxLabel').textContent = e==='milk' ? 'Preset' : e==='reactor' ? 'Component' : 'Effect';
+  $('#engineSel').value = e; $('#fxLabel').textContent = e==='milk' ? 'Preset' : e==='reactor' ? 'Component' : e==='hyper' ? 'Scene' : 'Effect';
   if (e==='reactor'){ rctx.setTransform(1,0,0,1,0,0); rctx.globalCompositeOperation='source-over'; rctx.globalAlpha=1; rctx.fillStyle='#07080c'; rctx.fillRect(0,0,rc.width,rc.height); }
   if (e==='milk') resize();
-  cpLast = '';
+  if (e==='hyper'){ HY.frame = 0; hySize(); }
+  cpLast = ''; ENGINES.forEach(k => { $('#'+k).style.filter = ''; });
 }
 
 /* ================= meters ================= */
@@ -1367,6 +1961,7 @@ function frame(now, external){
   if (document.hidden && !external) return;
   analyse(now);
   if (engine==='milk'){ renderMilk(); if (S.autoCycle && !S.beatSwitch && names.length && now - lastSwitch > S.cycle*1000) randPreset(); }
+  else if (engine==='hyper') renderHyper(now, dt);
   else if (engine==='avs') renderAVS(now, dt);
   else if (engine==='classic') renderClassic(now, dt);
   else renderReactor(now, dt);
@@ -1376,19 +1971,23 @@ function frame(now, external){
 /* Color pulse: the music swells saturation and brightness of the whole picture, independent of Motion. A compositor-side filter, so it costs nothing per pixel. */
 let cpLvl = 0, cpLast = '';
 function colorPulse(){
-  const p = S.colorPulse, cv = $('#'+engine);
-  if (p <= 0){ if (cpLast){ cpLast = ''; ENGINES.forEach(k => { $('#'+k).style.filter = ''; }); } return; }
-  const target = A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35;
-  cpLvl = target > cpLvl ? cpLvl + (target-cpLvl)*0.5 : cpLvl*0.9 + target*0.1;
-  const sat = (1 + cpLvl*p*0.9).toFixed(2), bri = (1 + cpLvl*p*0.45).toFixed(2), con = (1 + cpLvl*p*0.15).toFixed(2);
-  const f = 'saturate(' + sat + ') brightness(' + bri + ') contrast(' + con + ')';
+  const p = S.colorPulse, cv = $('#'+engine); let f = '';
+  if (p > 0){
+    const target = A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35;
+    cpLvl = target > cpLvl ? cpLvl + (target-cpLvl)*0.5 : cpLvl*0.9 + target*0.1;
+    const sat = (1 + cpLvl*p*0.9).toFixed(2), bri = (1 + cpLvl*p*0.45).toFixed(2), con = (1 + cpLvl*p*0.15).toFixed(2);
+    f = 'saturate(' + sat + ') brightness(' + bri + ') contrast(' + con + ')';
+  }
+  if (engine==='milk'){ const ex = milkFilter(); if (ex) f = f ? f + ' ' + ex : ex; }
   if (f !== cpLast){ cpLast = f; cv.style.filter = f; }
 }
 window.__tick = () => { if (devOn) devPump(); frame(performance.now(), true); };   // hosts without a working requestAnimationFrame drive frames themselves
 
 /* ================= events ================= */
+var BOUND = [];   // re-sync functions for controls bound to S (used when a remote replaces the whole state)
 function bindRange(id, key, out, fmtv, after){
   const elm = $('#'+id); elm.value = S[key]; const o = out ? $('#'+out) : null; const show = () => { if (o) o.textContent = fmtv(+elm.value); };
+  BOUND.push(() => { elm.value = S[key]; show(); if (after) after(); });
   show(); elm.addEventListener('input', () => { S[key] = +elm.value; show(); save(); if (after) after(); });
 }
 bindRange('sens','sens','oSens', v => v.toFixed(2)+'×');
@@ -1403,11 +2002,13 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
   const showM = () => { const v = S.motion; om.textContent = Math.round(v*100) + '%'; tag.textContent = v >= 0.99 ? 'full motion' : v <= 0.01 ? 'trance' : v < 0.4 ? 'calm' : 'eased'; };
   const showC = () => { oc.textContent = Math.round(S.colorPulse*100) + '%'; };
   m.value = Math.round(S.motion*100); c.value = Math.round(S.colorPulse*100); showM(); showC();
-  m.addEventListener('input', () => { S.motion = clamp(m.value/100, 0, 1); showM(); save(); castSend('motion', S.motion); });
-  c.addEventListener('input', () => { S.colorPulse = clamp(c.value/100, 0, 1); showC(); save(); castSend('color', S.colorPulse); }); }
+  m.addEventListener('input', () => { S.motion = clamp(m.value/100, 0, 1); showM(); save(); });
+  c.addEventListener('input', () => { S.colorPulse = clamp(c.value/100, 0, 1); showC(); save(); });
+  BOUND.push(() => { m.value = Math.round(S.motion*100); c.value = Math.round(S.colorPulse*100); showM(); showC(); }); }
 const cycleUI = () => { const on = S.autoCycle; $('#cycle').disabled = !on; $('#beatSwitch').disabled = !on; };
 $('#autoCycle').checked = S.autoCycle; $('#autoCycle').addEventListener('change', e => { S.autoCycle = e.target.checked; lastSwitch = performance.now(); cycleUI(); save(); });
 $('#beatSwitch').checked = S.beatSwitch; $('#beatSwitch').addEventListener('change', e => { S.beatSwitch = e.target.checked; save(); });
+BOUND.push(() => { $('#autoCycle').checked = S.autoCycle; $('#beatSwitch').checked = S.beatSwitch; cycleUI(); });
 cycleUI();
 $('#presetSearch').addEventListener('input', applyFilter);
 $('#presetSel').addEventListener('change', e => loadPreset(names.indexOf(e.target.value)));
@@ -1431,7 +2032,17 @@ $('#secReact').addEventListener('toggle', resize);
   sel.addEventListener('change', e => { const k = e.target.value; if (!AVS_PRESETS[k]) return; avsApply(AVS_PRESETS[k], k); flash('AVS · ' + k); }); }
 $('#btnAvsRand').addEventListener('click', avsRandomize);
 $('#btnAvsClear').addEventListener('click', avsClear);
-ENGINES.filter(k => k!=='milk').forEach(k => { refreshFxList(k); $('#fxsel-'+k).addEventListener('change', () => renderPanel(k)); renderPanel(k); });
+ENGINES.filter(k => k!=='milk' && k!=='hyper').forEach(k => { refreshFxList(k); $('#fxsel-'+k).addEventListener('change', () => renderPanel(k)); renderPanel(k); });
+refreshFxList('hyper'); $('#fxsel-hyper').value = S.hyper.scene; renderPanel('hyper');
+$('#fxsel-hyper').addEventListener('change', e => hySetScene(e.target.value));
+refreshFxList('milked'); renderPanel('milked');
+$('#fxsel-milked').addEventListener('change', () => renderPanel('milked'));
+$('#btnMilkReset').addEventListener('click', resetMilkEdits);
+$('#btnHyPrev').addEventListener('click', () => hyStep(-1)); $('#btnHyNext').addEventListener('click', () => hyStep(1));
+$('#btnHyRand').addEventListener('click', hyRandomScene); $('#btnHyMutate').addEventListener('click', hyMutate); $('#btnHyReset').addEventListener('click', hyReset);
+bindRange('hyq', 'hyq', 'oHyq', v => ['low','auto','high'][v|0], () => { HY.W = 0; hySize(); });
+$('#imgIn').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (!f) return; loadImageURL(URL.createObjectURL(f), true); e.target.value = ''; });
+try { const d = localStorage.getItem('spectral-drift-img'); if (d) loadImageURL(d, false); } catch(e){}
 compileFormulas();
 $('#seek').addEventListener('pointerdown', () => { seeking = true; });
 $('#seek').addEventListener('input', e => { if (T.buffer) $('#tCur').textContent = fmt(e.target.value/1000*T.dur); });
@@ -1457,27 +2068,104 @@ document.addEventListener('keydown', e => {
     case 'n': case 'N': case 'ArrowRight': stepPreset(1); break;
     case 'p': case 'P': case 'ArrowLeft': stepPreset(-1); break;
     case 'r': case 'R': randPreset(); break;
-    case 'e': case 'E': { ensureCtx(); let i = ENGINES.indexOf(engine); for (let k=0;k<ENGINES.length;k++){ i = (i+1)%ENGINES.length; if (ENGINES[i]!=='milk' || milkOK) break; } setEngine(ENGINES[i]); } break;
+    case 'e': case 'E': { ensureCtx(); let i = ENGINES.indexOf(engine); for (let k=0;k<ENGINES.length;k++){ i = (i+1)%ENGINES.length; if ((ENGINES[i]!=='milk' || milkOK) && (ENGINES[i]!=='hyper' || HY.ok || !HY.tried)) break; } setEngine(ENGINES[i]); } break;
     case 'f': case 'F': $('#btnFull').click(); break;
     case 'h': case 'H': document.body.classList.toggle('ui-hidden'); resize(); break;
   }
 });
 
+/* ================= remote control: a phone drives a PC or a TV with the same dials ================= */
+// Outgoing (phone): every saved change is sent, debounced, as the whole state; the host forwards it to a linked PC and to Cast.
+// Incoming (PC app, Cast receiver): applyState() rebuilds the state and refreshes every panel and engine without a reload.
+var remoteT = 0, remoteApplying = false;
+const REMOTE_LOCAL = ['vol', 'quality', 'hyq'];              // per-device: volume and render quality stay where they are
+function stateJSON(){ return JSON.stringify(S, (k, v) => k === 'milked' ? undefined : v); }
+function remoteOut(json){ if (typeof android !== 'undefined' && android && typeof android.remoteState === 'function') try { android.remoteState(json); } catch(e){} }
+function remoteQueue(){ if (remoteApplying || WALL) return; clearTimeout(remoteT); remoteT = setTimeout(() => remoteOut(stateJSON()), 120); }
+function remoteImage(){
+  if (remoteApplying || WALL || typeof android === 'undefined' || !android || typeof android.remoteImage !== 'function') return;
+  let d = '';
+  if (IMG.user && IMG.el){ const k = Math.min(1, 448/Math.max(IMG.el.width, IMG.el.height)), c = el('canvas'); c.width = Math.max(1, Math.round(IMG.el.width*k)); c.height = Math.max(1, Math.round(IMG.el.height*k)); c.getContext('2d').drawImage(IMG.el, 0, 0, c.width, c.height); d = c.toDataURL('image/jpeg', 0.78); }
+  try { android.remoteImage(d); } catch(e){}
+}
+window.__remoteSync = () => { remoteOut(stateJSON()); remoteImage(); };
+function applyState(json){
+  let j; try { j = typeof json === 'string' ? JSON.parse(json) : json; } catch(e){ return; }
+  if (!j || typeof j !== 'object' || typeof j.engine !== 'string') return;
+  j.v = 4; REMOTE_LOCAL.forEach(k => { j[k] = S[k]; });
+  const prevPreset = S.preset, prevScene = S.hyper.scene;
+  remoteApplying = true;
+  try {
+    S = buildState(j);
+    BOUND.forEach(f => { try { f(); } catch(e){} });
+    ['avs', 'classic', 'reactor'].forEach(k => { try { refreshFxList(k); renderPanel(k); } catch(e){} });
+    $('#avsPreset').value = S.avs.preset || '';
+    try { compileFormulas(); } catch(e){} AV.lutKey = '';
+    $('#fxsel-hyper').value = S.hyper.scene; renderPanel('hyper'); if (S.hyper.scene !== prevScene) HY.frame = 0;
+    if (S.preset && S.preset !== prevPreset && names.includes(S.preset)) loadPreset(names.indexOf(S.preset)); else bindMilkEdits();
+    if (S.engine !== engine) setEngine(S.engine);
+    save();
+  } finally { remoteApplying = false; }
+}
+function applyImage(d){
+  if (d === '') { if (IMG.user) { remoteApplying = true; try { clearImage(); } finally { remoteApplying = false; } } return; }
+  if (typeof d === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(d)) loadImageURL(d, true);
+}
+
 /* ================= boot ================= */
+// Guard: if the host lays the page out with a collapsed viewport, pin the page to the real window height.
+function pinHeight(){ const de = document.documentElement, h = window.innerHeight || screen.height || 0;
+  if (h > 100 && de.clientHeight < h*0.6){ de.style.height = h + 'px'; document.body.style.height = h + 'px'; } }
+pinHeight(); window.addEventListener('resize', pinHeight);
 resize();
-window.__castSync = () => { castSend('engine', S.engine); if (S.engine==='milk' && S.preset) castSend('preset', S.preset); if (S.avs.preset) castSend('avs', S.avs.preset); castSend('motion', S.motion); castSend('color', S.colorPulse); };
+window.__castSync = () => { castSend('engine', S.engine); if (S.engine==='milk' && S.preset) castSend('preset', S.preset); if (S.avs.preset) castSend('avs', S.avs.preset); if (S.hyper) castSend('hyscene', S.hyper.scene); castSend('motion', S.motion); castSend('color', S.colorPulse); window.__remoteSync(); };
 if (android){
   $('#btnFull').hidden = true;
-  if (typeof android.openWallpaperPicker === 'function'){ $('#sec-android').hidden = false; $('#btnWallpaper').addEventListener('click', () => { try { android.openWallpaperPicker(); } catch(e){} }); }
-  if (typeof android.uiHidden === 'function') new MutationObserver(() => { try { android.uiHidden(document.body.classList.contains('ui-hidden')); } catch(e){} }).observe(document.body, { attributes:true, attributeFilter:['class'] });
+  if (typeof android.openWallpaperPicker === 'function'){ $('#sec-android').hidden = false; $('#btnWallpaper').addEventListener('click', () => { try { android.openWallpaperPicker(); } catch(e){} });
+    const bdNote = () => { let st = ''; try { st = typeof android.backdropStatus === 'function' ? android.backdropStatus() : ''; } catch(e){}
+      $('#backdropNote').textContent = st === 'picked' ? 'When the app is closed, your home screen shows the picture you chose.' : st === 'wallpaper' ? 'When the app is closed, your home screen shows your previous wallpaper.' : 'Set as live wallpaper asks for the picture your home screen should show when the app is closed.'; };
+    window.__backdropChanged = bdNote; bdNote();
+    $('#btnBackdrop').addEventListener('click', () => { try { android.pickBackdrop(); } catch(e){} });
+    $('#btnExit').addEventListener('click', () => { try { android.exitApp(); } catch(e){} }); }
+  if (typeof android.pcConnect === 'function'){
+    let pcs = [], linked = false;
+    const sel = $('#pcSel'), addr = $('#pcAddr'), pin = $('#pcPin'), btn = $('#btnPcLink'), note = $('#pcNote');
+    const fill = () => { const v = sel.value; sel.innerHTML = '';
+      pcs.forEach(p => { const o = el('option'); o.value = p.host + ':' + p.port; o.textContent = p.name; sel.appendChild(o); });
+      if (!pcs.length){ const o = el('option'); o.value = ''; o.textContent = 'Searching…'; sel.appendChild(o); }
+      const m = el('option'); m.value = 'manual'; m.textContent = 'Enter address…'; sel.appendChild(m);
+      if ([...sel.options].some(o => o.value === v)) sel.value = v; addr.hidden = sel.value !== 'manual'; };
+    window.__pcList = list => { pcs = Array.isArray(list) ? list : []; fill(); };
+    window.__pcStatus = s => { linked = s.state === 'connected';
+      btn.textContent = linked ? 'Disconnect' : s.state === 'connecting' ? 'Connecting…' : 'Connect'; btn.disabled = s.state === 'connecting';
+      if (s.msg) note.textContent = s.msg; if (linked) toast('Controlling ' + s.pc); };
+    sel.addEventListener('change', () => { addr.hidden = sel.value !== 'manual'; });
+    btn.addEventListener('click', () => {
+      if (linked){ try { android.pcDisconnect(); } catch(e){} return; }
+      const target = sel.value === 'manual' ? addr.value.trim() : sel.value, m = /^([^:\s]+)(?::(\d+))?$/.exec(target);
+      if (!m){ toast('Pick a PC, or choose Enter address… and type the address the PC shows'); return; }
+      if (!/^\d{4}$/.test(pin.value)){ toast('Enter the 4-digit PIN shown on the PC'); return; }
+      const label = sel.value === 'manual' ? m[1] : sel.options[sel.selectedIndex].textContent;
+      try { android.pcConnect(m[1], parseInt(m[2] || '47820', 10), pin.value, label); } catch(e){} });
+    try { const sv = JSON.parse(android.pcSaved() || '{}'); if (sv.pin) pin.value = sv.pin; if (sv.host && !sv.found){ pcs = []; } } catch(e){}
+    fill(); try { android.pcScan(); } catch(e){}
+  }
+  if (typeof android.castSlot === 'function' && android.castAvailable && android.castAvailable()) $('#castSlot').hidden = false;
+  new MutationObserver(() => { try { if (typeof android.uiHidden === 'function') android.uiHidden(document.body.classList.contains('ui-hidden')); } catch(e){} reportCastSlot(); }).observe(document.body, { attributes:true, attributeFilter:['class'] });
+  window.addEventListener('resize', reportCastSlot);
   if (typeof android.ready === 'function') requestAnimationFrame(() => requestAnimationFrame(() => { try { android.ready(); } catch(e){} }));
 }
 try { ensureCtx(); } catch(e){ /* created on first tap instead */ }
-if (WALL){ document.body.classList.add('ui-hidden'); $('#hint').classList.add('gone'); if (S.engine==='milk' && android) S.engine = 'avs'; }
+if (WALL){ document.body.classList.add('ui-hidden'); $('#hint').classList.add('gone'); }
 setEngine(S.engine);
 if (window.matchMedia('(max-width:899px)').matches) $('#dock').classList.add('collapsed'); else $('#dock').classList.remove('collapsed');
-if (WALL && android){ setTimeout(startDevice, 300); }                       // Android live wallpaper: Kotlin drives frames via __tick()
-else if (WALL){ let gotRaf = false; requestAnimationFrame(() => { gotRaf = true; }); setTimeout(() => { if (!gotRaf) setInterval(window.__tick, 33); }, 700); requestAnimationFrame(frame); }
+if (WALL){
+  if (android) setTimeout(startDevice, 300);                                  // Android live wallpaper: the phone's output mix
+  // The host calls __wallSync() whenever the wallpaper comes back into view: reload if the app changed the dials or the image.
+  const wallSig = () => { try { return (localStorage.getItem('spectral-drift') || '') + '|' + (localStorage.getItem('spectral-drift-img') || '').length; } catch(e){ return ''; } };
+  const bootSig = wallSig(); window.__wallSync = () => { if (wallSig() !== bootSig) location.reload(); };
+  let gotRaf = false; requestAnimationFrame(() => { gotRaf = true; }); setTimeout(() => { if (!gotRaf) setInterval(window.__tick, 33); }, 700); requestAnimationFrame(frame);
+}
 else requestAnimationFrame(frame);
 })();
 </script>
