@@ -1,0 +1,1485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectral Drift receiver</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<style>html,body{margin:0;background:#07080c}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Spectral Drift</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed stage (MilkDrop WebGL, AVS-style pixel stack, Classic analyzer, Reactor feedback) with a control dock —
+   right rail on wide screens, bottom sheet on phones. Transport always shows Visualizer + Effect dropdowns; dials live below. Dark by design. */
+:root{
+  --bg:#07080c; --panel:#0f121a; --panel-2:#161a25; --line:#232a3a; --line-2:#2f3750;
+  --fg:#e9ecf4; --muted:#8c95aa; --dim:#5d6578;
+  --accent:#ff6b3d; --accent-ink:#1a0a05; --bad:#ff5c5c;
+  --bass:#ff6b3d; --mid:#f6c344; --treb:#3fd7c7; --beat:#ffffff;
+  --font-ui:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+  --font-data:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --radius:6px;
+  color-scheme:dark;
+  --sa-top:env(safe-area-inset-top,0px); --sa-right:env(safe-area-inset-right,0px); --sa-bottom:env(safe-area-inset-bottom,0px); --sa-left:env(safe-area-inset-left,0px);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.35;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit}
+:focus-visible{outline:2px solid var(--treb);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+#app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 352px;grid-template-rows:100%}
+body.ui-hidden #app{grid-template-columns:100%;grid-template-rows:100%}
+body.ui-hidden #dock{display:none}
+body.ui-hidden .stagebtns{display:none}
+
+/* ---------- stage ---------- */
+#stage{position:relative;min-width:0;min-height:0;background:#000;overflow:hidden;touch-action:manipulation}
+#stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;left:max(12px,var(--sa-left));top:max(12px,var(--sa-top));font-family:var(--font-data);font-size:12px;color:#fff;text-shadow:0 0 8px #000,0 1px 2px #000;opacity:0;transition:opacity .4s;pointer-events:none;max-width:72%;word-break:break-word}
+.flash.show{opacity:1}
+.hint{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;transition:opacity .4s}
+.hint span{background:rgba(7,8,12,.74);border:1px solid var(--line-2);padding:10px 16px;border-radius:999px;font-size:13px;color:var(--fg);letter-spacing:.02em}
+.hint.gone{opacity:0}
+.stagebtns{position:absolute;right:max(10px,var(--sa-right));top:max(10px,var(--sa-top));display:flex;gap:6px}
+.icobtn{width:36px;height:36px;border-radius:var(--radius);background:rgba(7,8,12,.62);border:1px solid var(--line-2);color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
+.icobtn:hover{border-color:var(--accent)}
+.icobtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(7,8,12,.86);border:1px solid var(--line-2);padding:8px 14px;border-radius:var(--radius);font-size:12px;color:var(--fg);opacity:0;transition:opacity .3s;pointer-events:none;max-width:88%;text-align:center}
+.toast.show{opacity:1}
+
+/* ---------- dock ---------- */
+#dock{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0;padding-top:var(--sa-top);padding-bottom:var(--sa-bottom)}
+.dock-head,.transport,.dock-body{padding-left:max(16px,var(--sa-left));padding-right:max(16px,var(--sa-right))}
+.dock-head{display:flex;align-items:center;gap:10px;padding-block:10px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;white-space:nowrap}
+.brand .mark{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0,var(--accent) 38%,transparent 72%);box-shadow:0 0 10px var(--accent)}
+.live{font-family:var(--font-data);font-size:11px;color:var(--bass);letter-spacing:.1em;margin-left:auto;display:none;align-items:center;gap:6px}
+.live.on{display:inline-flex}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--bass);box-shadow:0 0 8px var(--bass)}
+.expand{display:none;margin-left:auto;background:var(--accent);color:var(--accent-ink);border:0;border-radius:var(--radius);padding:7px 11px;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.live.on + .expand{margin-left:0}
+
+.transport{padding-block:12px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.t-row{display:flex;align-items:center;gap:8px;min-width:0}
+.btn{background:var(--panel-2);color:var(--fg);border:1px solid var(--line-2);border-radius:var(--radius);padding:7px 11px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.sm{padding:5px 8px;font-size:11px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-play{width:46px;height:46px;flex:none;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:0;display:grid;place-items:center;cursor:pointer;padding:0}
+.btn-play:hover{box-shadow:0 0 18px rgba(255,107,61,.45)}
+.btn-play svg{width:20px;height:20px;fill:currentColor}
+.track{min-width:0;flex:1;display:grid;gap:2px}
+.track .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track .sub{font-size:11px;color:var(--muted);font-family:var(--font-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seek{display:flex;align-items:center;gap:8px}
+.time{font-family:var(--font-data);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:40px}
+.time.r{text-align:right}
+input[type=range]{accent-color:var(--accent);flex:1;min-width:0;height:22px;margin:0}
+input[type=range]:disabled{opacity:.4}
+.src-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vol{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;color:var(--muted)}
+.vol input{width:76px;flex:none}
+.sel-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sel-row .lab-sel{min-width:0}
+
+.dock-body{overflow:auto;min-height:0;padding-block:14px;display:grid;gap:16px;align-content:start;overscroll-behavior:contain}
+section{display:grid;gap:8px;min-width:0}
+section h2,details summary{margin:0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
+section h2 small,details summary small{font-weight:400;letter-spacing:0;text-transform:none;color:var(--dim);font-family:var(--font-data);font-size:11px;margin-left:auto}
+details{display:grid;gap:8px}
+details summary{cursor:pointer;list-style:none;user-select:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:'▸';color:var(--dim);font-size:12px}
+details[open] summary::before{content:'▾'}
+details > div{display:grid;gap:8px;padding-top:4px}
+
+#spec{width:100%;height:58px;display:block;border-radius:var(--radius);background:var(--panel-2)}
+.bandkey{display:flex;gap:12px;font-size:11px;color:var(--muted);font-family:var(--font-data);flex-wrap:wrap}
+.bandkey i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.meters{display:grid;grid-template-columns:52px 1fr 3.2ch;gap:7px 10px;align-items:center;font-size:12px}
+.meters .lab{font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px}
+.meter{height:9px;background:var(--panel-2);border-radius:4px;overflow:hidden}
+.meter i{display:block;height:100%;transform-origin:left;transform:scaleX(0);background:var(--c);border-radius:4px}
+.val{font-family:var(--font-data);color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;font-size:11px}
+.beatrow{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);padding-top:2px}
+.led{width:13px;height:13px;border-radius:50%;background:#262b3a;flex:none;transition:box-shadow .06s,background .06s}
+.led.on{background:#fff;box-shadow:0 0 12px #fff,0 0 26px var(--accent)}
+.bpm{font-family:var(--font-data);color:var(--fg);font-variant-numeric:tabular-nums}
+.bpm b{font-weight:500;color:var(--mid)}
+
+.ctl{display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:center;font-size:12px}
+.ctl label{color:var(--fg)}
+.ctl output{font-family:var(--font-data);color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+.ctl input{grid-column:1/-1}
+.ctl .why{grid-column:1/-1;font-size:11px;color:var(--dim);margin-top:-2px}
+select{width:100%;background:var(--panel-2);color:var(--fg);border:1px solid var(--line-2);border-radius:var(--radius);padding:7px 8px;font-size:12px;min-width:0}
+select.big{font-weight:600;letter-spacing:.03em;text-transform:uppercase;font-size:12px;padding:9px 10px;border-color:var(--accent)}
+input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px solid var(--line-2);border-radius:var(--radius);padding:7px 8px;font-size:12px;min-width:0}
+.lab-sel{display:grid;gap:4px;font-size:12px}
+.lab-sel > span{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row .btn{flex:1}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px}
+.chk input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.chk.on-main{padding:6px 8px;background:var(--panel-2);border-radius:var(--radius);border:1px solid var(--line)}
+.formula{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;align-items:center;font-size:12px}
+.formula label{font-family:var(--font-data);color:var(--mid)}
+.formula input{font-family:var(--font-data);font-size:12px}
+.formula .err{grid-column:1/-1;font-size:11px;color:var(--bad);font-family:var(--font-data)}
+.formula .err:empty{display:none}
+.vars{font-family:var(--font-data);font-size:11px;color:var(--dim);line-height:1.5;margin:0}
+.vars b{color:var(--muted);font-weight:500}
+.mathh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);font-weight:600;padding-top:4px;border-top:1px dashed var(--line)}
+.note{font-size:11px;color:var(--dim);line-height:1.4;margin:0}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;color:var(--muted)}
+.keys kbd{font-family:var(--font-data);font-size:11px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:4px;padding:1px 6px;color:var(--fg)}
+.panel{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:var(--radius);background:rgba(22,26,37,.5)}
+.panel h3{margin:0;font-size:13px;font-weight:700;letter-spacing:.04em}
+
+@media (max-width:899px){
+  #app{grid-template-columns:100%;grid-template-rows:minmax(0,1fr) auto}
+  #dock{border-left:0;border-top:1px solid var(--line);max-height:74%;padding-top:0}
+  #dock.collapsed .dock-body{display:none}
+  .expand{display:inline-block}
+}
+</style>
+
+<div id="app">
+  <div id="stage">
+    <canvas id="milk"></canvas>
+    <canvas id="avs" hidden></canvas>
+    <canvas id="classic" hidden></canvas>
+    <canvas id="reactor" hidden></canvas>
+    <div class="flash" id="flash"></div>
+    <div class="hint" id="hint"><span>Press ▶ for the demo loop, or load a track</span></div>
+    <div class="stagebtns">
+      <button class="icobtn" id="btnHide" title="Hide controls (H)" aria-label="Hide controls">
+        <svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A10.6 10.6 0 0 1 12 5c5 0 9 4 10 7-.4 1.2-1.2 2.5-2.3 3.6M6.3 6.3C4.1 7.7 2.6 9.6 2 12c1 3 5 7 10 7 1.6 0 3.1-.4 4.4-1"/></svg>
+      </button>
+      <button class="icobtn" id="btnFull" title="Fullscreen (F)" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>
+      </button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <aside id="dock" class="collapsed">
+    <div class="dock-head">
+      <div class="brand"><span class="mark"></span>Spectral Drift</div>
+      <span class="live" id="liveTag"><i></i>LIVE</span>
+      <button class="expand" id="btnExpand" aria-expanded="false">Dials ▾</button>
+    </div>
+
+    <div class="transport">
+      <div class="sel-row">
+        <div class="lab-sel"><span>Visualizer</span>
+          <select id="engineSel" class="big" aria-label="Visualizer">
+            <option value="milk">MilkDrop</option>
+            <option value="avs">AVS stack</option>
+            <option value="classic">Classic</option>
+            <option value="reactor">Reactor</option>
+          </select>
+        </div>
+        <div class="lab-sel"><span id="fxLabel">Effect</span>
+          <select id="presetSel" aria-label="MilkDrop preset"></select>
+          <select id="fxsel-avs" aria-label="AVS effect" hidden></select>
+          <select id="fxsel-classic" aria-label="Classic part" hidden></select>
+          <select id="fxsel-reactor" aria-label="Reactor component" hidden></select>
+        </div>
+      </div>
+      <div class="t-row">
+        <button class="btn-play" id="btnPlay" aria-label="Play">
+          <svg id="icoPlay" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>
+          <svg id="icoPause" viewBox="0 0 24 24" hidden><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+          <svg id="icoStop" viewBox="0 0 24 24" hidden><path d="M5 5h14v14H5z"/></svg>
+        </button>
+        <div class="track">
+          <div class="name" id="trackName">Demo loop</div>
+          <div class="sub" id="trackSub">124 BPM · synth house, 8 bars, loops</div>
+        </div>
+      </div>
+      <div class="seek">
+        <span class="time" id="tCur">0:00</span>
+        <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek">
+        <span class="time r" id="tDur">0:00</span>
+      </div>
+      <div class="src-row">
+        <button class="btn sm" id="btnDemo">Demo</button>
+        <label class="btn sm" for="fileIn">Load track</label>
+        <input type="file" id="fileIn" accept="audio/*" hidden>
+        <button class="btn sm" id="btnDevice" title="What this device is playing" hidden>Device audio</button>
+        <button class="btn sm" id="btnMic" title="Listen through the microphone">Mic</button>
+        <button class="btn sm" id="btnSys" title="Capture what the computer is playing (desktop Chrome/Edge)">System</button>
+        <div class="vol"><span>Vol</span><input type="range" id="vol" min="0" max="100" value="80" aria-label="Volume"></div>
+      </div>
+    </div>
+
+    <div class="dock-body">
+      <section id="sec-feel">
+        <h2>Feel <small id="feelTag">full motion</small></h2>
+        <div class="ctl">
+          <label for="motion">Motion</label><output id="oMotion">100%</output>
+          <input type="range" id="motion" min="0" max="100" step="1" value="100">
+          <span class="why">How hard shapes react to the music. 0 = trance: steady drift, no jumping.</span>
+        </div>
+        <div class="ctl">
+          <label for="colorPulse">Color pulse</label><output id="oColorPulse">50%</output>
+          <input type="range" id="colorPulse" min="0" max="100" step="1" value="50">
+          <span class="why">Music still breathes through the colors: saturation and brightness swell on the beat, whatever Motion is set to.</span>
+        </div>
+      </section>
+
+      <section id="sec-milk">
+        <h2>MilkDrop presets <small id="presetCount">0</small></h2>
+        <input type="text" id="presetSearch" placeholder="Filter presets…" aria-label="Filter presets">
+        <div class="row">
+          <button class="btn sm" id="btnPrev">◀ Prev</button>
+          <button class="btn sm" id="btnRand">Random</button>
+          <button class="btn sm" id="btnNext">Next ▶</button>
+        </div>
+        <label class="chk on-main"><input type="checkbox" id="autoCycle"> Cycle presets automatically</label>
+        <div class="ctl">
+          <label for="cycle">Every</label><output id="oCycle">20 s</output>
+          <input type="range" id="cycle" min="5" max="120" step="5" value="20">
+        </div>
+        <label class="chk"><input type="checkbox" id="beatSwitch"> Switch on a strong beat instead</label>
+        <div class="ctl">
+          <label for="blend">Blend</label><output id="oBlend">2.7 s</output>
+          <input type="range" id="blend" min="0" max="6" step="0.1" value="2.7">
+          <span class="why">Crossfade when you change presets by hand.</span>
+        </div>
+        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+100)</button></div>
+        <div class="ctl">
+          <label for="quality">Render quality</label><output id="oQuality">auto</output>
+          <input type="range" id="quality" min="0" max="2" step="1" value="1">
+          <span class="why">Pixel ratio 0.75 / auto / device. Drop it if a phone stutters.</span>
+        </div>
+        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files; their dials live inside the preset. For your own math, use AVS or Reactor.</p>
+      </section>
+
+      <section id="sec-avs" hidden>
+        <div class="panel" id="panel-avs"></div>
+        <h2>AVS stack <small id="avsRes">320 px</small></h2>
+        <div class="lab-sel"><span>Stack preset</span><select id="avsPreset" aria-label="AVS preset"></select></div>
+        <div class="row">
+          <button class="btn sm" id="btnAvsRand">Randomize</button>
+          <button class="btn sm" id="btnAvsClear">Clear screen</button>
+        </div>
+        <p class="note">Runs top to bottom like an AVS preset: Trans effects warp last frame's pixels, then Render effects draw on top. ● in the Effect list = enabled.</p>
+      </section>
+
+      <section id="sec-classic" hidden>
+        <div class="panel" id="panel-classic"></div>
+        <p class="note">Tap the picture to cycle analyzer → scope → both, the way clicking the main-window vis did.</p>
+      </section>
+
+      <section id="sec-reactor" hidden>
+        <div class="panel" id="panel-reactor"></div>
+      </section>
+
+      <details id="secReact">
+        <summary>Reactivity <small id="fftInfo">FFT 2048</small></summary>
+        <div>
+          <canvas id="spec" height="58"></canvas>
+          <div class="bandkey">
+            <span><i style="background:var(--bass)"></i>bass 20–250 Hz</span>
+            <span><i style="background:var(--mid)"></i>mid –2 kHz</span>
+            <span><i style="background:var(--treb)"></i>treble –12 kHz</span>
+          </div>
+          <div class="meters">
+            <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mBass" style="--c:var(--bass)"></i></div><span class="val" id="vBass">0</span>
+            <span class="lab" style="color:var(--mid)">Mid</span><div class="meter"><i id="mMid" style="--c:var(--mid)"></i></div><span class="val" id="vMid">0</span>
+            <span class="lab" style="color:var(--treb)">Treble</span><div class="meter"><i id="mTreb" style="--c:var(--treb)"></i></div><span class="val" id="vTreb">0</span>
+            <span class="lab">Level</span><div class="meter"><i id="mLvl" style="--c:var(--fg)"></i></div><span class="val" id="vLvl">0</span>
+          </div>
+          <div class="beatrow">
+            <span class="led" id="led"></span><span>Beat</span>
+            <span class="bpm" id="bpm">— <b>BPM</b></span>
+          </div>
+          <div class="ctl">
+            <label for="sens">Sensitivity</label><output id="oSens">1.2×</output>
+            <input type="range" id="sens" min="0.4" max="3" step="0.05" value="1.2">
+            <span class="why">Gain on every band before smoothing. Turn up for mic input.</span>
+          </div>
+          <div class="ctl">
+            <label for="rel">Release</label><output id="oRel">0.80</output>
+            <input type="range" id="rel" min="0.40" max="0.97" step="0.01" value="0.80">
+            <span class="why">Fast attack, slow fall. Higher = smoother, lazier.</span>
+          </div>
+          <div class="ctl">
+            <label for="thr">Beat threshold</label><output id="oThr">1.35×</output>
+            <input type="range" id="thr" min="1.05" max="2.2" step="0.05" value="1.35">
+            <span class="why">Bass energy vs. its 1-second average. Lower = more beats.</span>
+          </div>
+        </div>
+      </details>
+
+      <section id="sec-android" hidden>
+        <h2>Phone</h2>
+        <div class="row"><button class="btn sm" id="btnWallpaper">Set as live wallpaper</button></div>
+        <p class="note">The wallpaper uses the visualizer and effect chosen here (AVS, Classic or Reactor; MilkDrop needs the full app). Tap the Cast icon at the top to send it to a TV.</p>
+      </section>
+
+      <details>
+        <summary>Keys</summary>
+        <div class="keys">
+          <kbd>Space</kbd><span>play / pause</span>
+          <kbd>N</kbd><span>next preset</span>
+          <kbd>P</kbd><span>previous preset</span>
+          <kbd>R</kbd><span>random preset</span>
+          <kbd>E</kbd><span>next visualizer</span>
+          <kbd>F</kbd><span>fullscreen</span>
+          <kbd>H</kbd><span>hide / show controls</span>
+        </div>
+      </details>
+    </div>
+  </aside>
+</div>
+
+<script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/butterchurn@2.6.7/lib/butterchurn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/butterchurn-presets@2.4.7/lib/butterchurnPresets.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const clamp = (v,a,b) => v<a?a:v>b?b:v;
+const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
+const ENGINES = ['milk','avs','classic','reactor'];
+const WALL = /wallpaper/.test(location.hash);   // #wallpaper: no UI, driven by a host (Android live wallpaper, Lively, Wallpaper Engine, Cast receiver)
+
+/* ================= defaults ================= */
+const SCOPES = {
+  'Spiral':        { A:0.14, F:4,  P:0.8, R:0.9,  K:1, fx:'cos(r*F+t*P)*(R*i+v*A)', fy:'sin(r*F+t*P)*(R*i+v*A)' },
+  'Circle':        { A:0.3,  F:1,  P:0,   R:0.55, K:1, fx:'cos(r*F+t*P-pi/2)*(R+v*A*(1+b))', fy:'sin(r*F+t*P-pi/2)*(R+v*A*(1+b))' },
+  'Bouncing line': { A:0.5,  F:1,  P:2,   R:1,    K:1, fx:'(i*2-1)*R*ar', fy:'v*A*(0.6+b)+sin(t*P)*0.35' },
+  '3D dish':       { A:1.6,  F:1,  P:0.3, R:1.5,  K:1, fx:'cos(r*F+t*P)*R/(2.6+sin(r*F+t*P)*1.3)', fy:'(0.9+v*A*(0.4+l))/(2.6+sin(r*F+t*P)*1.3)-0.25' },
+  'Spectrum ring': { A:0.6,  F:1,  P:0,   R:0.28, K:1, fx:'cos(r*F+t*P-pi/2)*(R+s*A)', fy:'sin(r*F+t*P-pi/2)*(R+s*A)' },
+  'Lissajous':     { A:0.25, F:2,  P:1,   R:0.8,  K:1, fx:'sin(F*r+t*P)*R', fy:'sin((F+1)*r)*R*0.75+v*A' },
+  'Rotating bow':  { A:0.4,  F:1,  P:0.9, R:0.9,  K:1, fx:'cos(t*P)*(i-0.5)*2*R-sin(t*P)*v*A', fy:'sin(t*P)*(i-0.5)*2*R+cos(t*P)*v*A' },
+  'Rose curve':    { A:0.15, F:5,  P:0.3, R:0.85, K:1, fx:'cos(r+t*P)*(cos(F*r)*R+v*A)', fy:'sin(r+t*P)*(cos(F*r)*R+v*A)' },
+  'Butterfly':     { A:0.1,  F:6,  P:0.2, R:0.24, K:1, fx:'sin(r*F+t*P)*(exp(cos(r*F))-2*cos(4*r*F)-sin(r*F/12)^5)*R+v*A', fy:'(exp(cos(r*F))-2*cos(4*r*F)-sin(r*F/12)^5)*cos(r*F+t*P)*R*(-1)+0.15' },
+  'Heart':         { A:0.08, F:1,  P:0,   R:1,    K:1, fx:'16*sin(r)^3*R/18+v*A*cos(r)', fy:'(13*cos(r)-5*cos(2*r)-2*cos(3*r)-cos(4*r))*R/(-18)+v*A*sin(r)' },
+  'Harmonograph':  { A:0.2,  F:1,  P:0.6, R:0.9,  K:1, fx:'sin(F*r+t*P)*R*0.7+sin((F*3+1)*r+t*P*0.7)*0.25', fy:'sin((F+2)*r)*R*0.6+sin((F*2+1)*r+t*P*1.3)*0.2+v*A' },
+  'Gear':          { A:0.2,  F:12, P:0.4, R:0.5,  K:1, fx:'cos(r+t*P)*(R+0.12*sign(sin(F*r))+v*A)', fy:'sin(r+t*P)*(R+0.12*sign(sin(F*r))+v*A)' },
+  'Spectrum bars': { A:0.9,  F:1,  P:0,   R:1,    K:1, fx:'(i*2-1)*R*ar', fy:'0.8-s*A*1.6' },
+  'Epitrochoid':   { A:0.08, F:5,  P:0.5, R:0.55, K:1, fx:'(cos(r)*F+cos(F*r+t*P)*(1+v*A*4))*R/(F+1)', fy:'(sin(r)*F-sin(F*r+t*P)*(1+v*A*4))*R/(F+1)' },
+  'Superformula':  { A:0.2,  F:6,  P:0.4, R:0.6,  K:1, fx:'cos(r+t*P)*R*pow(abs(cos(F*r/4))^3+abs(sin(F*r/4))^3,-1/3)*(1+v*A)', fy:'sin(r+t*P)*R*pow(abs(cos(F*r/4))^3+abs(sin(F*r/4))^3,-1/3)*(1+v*A)' }
+};
+const AVS_DEF = {
+  trans:  { fade:10, blur:1, passes:1, mirror:'none', invert:false, grain:0, bright:0, contrast:0, posterize:0 },
+  move:   { on:true, zoom:-0.06, rot:0.02, warp:'tunnel', W:1, Q:12, cx:0, cy:0, wrap:false, fd:'d*(1-0.04*W)', fr:'r+0.15*W*sin(d*Q)' },
+  dyna:   { on:false, grid:24, blend:false, fd:'d*(1-0.03*W*b)', fr:'r+0.03*W*sin(t+d*Q)', W:1, Q:6 },
+  water:  { on:false, damp:0.95, strength:1.2, drops:0.4, beatDrop:true, radius:4, shade:1 },
+  mosaic: { on:false, size:1, beatSize:8, decay:0.9 },
+  glitch: { on:false, shift:0, scatter:0, beatShift:6, beatScatter:3, decay:0.85 },
+  color:  { hue:200, speed:0.6, spread:60, sat:95, light:62, treb:3, band:false },
+  scope:  Object.assign({ on:true, preset:'Spiral', n:200, X:1, Y:1, rotate:0, width:1, mode:'line' }, SCOPES['Spiral']),
+  ostar:  { on:false, arms:5, length:0.8, amp:0.4, twist:0, spin:0.3, src:'wave', width:1 },
+  bspin:  { on:false, arms:2, size:0.8, src:'bass', speed:1, width:1.5, style:'triangles' },
+  rstars: { on:false, count:5, points:5, size:0.12, spread:0.65, speed:1, bounce:1, spin:1 },
+  simple: { on:false, kind:'spectrum', style:'solid', pos:'bottom', height:0.5, bands:64, mirror:false, width:1 },
+  fount:  { on:false, rate:1, gravity:1, spread:1, rotate:0.5, size:1, life:1, src:'treble' },
+  grid:   { on:false, spacing:12, vx:0.4, vy:0.2, size:1, pulse:1 },
+  tscope: { on:false, speed:1, width:1, bands:64, dir:'right', height:1 },
+  text:   { on:false, text:'SPECTRAL DRIFT', size:0.22, bounce:1, src:'bass', x:0, y:0, font:'ui', outline:false },
+  plane:  { on:false, rows:14, cols:24, speed:1, height:1, persp:1, size:1, ripple:0, dir:'toward' },
+  stars:  { on:false, count:160, speed:1, bass:1, size:1, spread:1, twinkle:0 },
+  ring:   { on:false, radius:0.25, src:'level', amt:0.6, width:1.5, sides:0, wobble:0, wfreq:6, spin:0 },
+  part:   { on:false, path:'lissajous', speed:1, size:2, bass:7, count:1, ghosts:0 }
+};
+const AVS_PRESETS = {
+  'Spiral tunnel':   { },
+  'Dot plane drive': { trans:{fade:22,blur:0}, move:{zoom:0.05,rot:0,warp:'none'}, color:{band:true}, scope:{on:false}, plane:{on:true} },
+  'Starfield dish':  { trans:{fade:12}, move:{zoom:-0.08,rot:0.01,warp:'none'}, scope:Object.assign({preset:'3D dish'}, SCOPES['3D dish']), stars:{on:true} },
+  'Swirl scope':     { trans:{fade:5}, move:{zoom:-0.02,rot:0,warp:'swirl'}, color:{band:true}, scope:Object.assign({preset:'Circle'}, SCOPES['Circle']), ring:{on:true} },
+  'Mirror bounce':   { trans:{fade:16,mirror:'h'}, move:{zoom:-0.03,rot:0,warp:'wave'}, scope:Object.assign({preset:'Bouncing line'}, SCOPES['Bouncing line']), part:{on:true} },
+  'Ripple rings':    { trans:{fade:8,blur:2}, move:{zoom:0,rot:0.03,warp:'ripple'}, color:{band:true}, scope:Object.assign({preset:'Spectrum ring', mode:'dots'}, SCOPES['Spectrum ring']), ring:{on:true} },
+  'Rose bulge':      { trans:{fade:6}, move:{zoom:-0.04,rot:-0.02,warp:'bulge'}, scope:Object.assign({preset:'Rose curve'}, SCOPES['Rose curve']), part:{on:true} },
+  'Kaleido gear':    { trans:{fade:9,mirror:'quad'}, move:{zoom:-0.05,rot:0.04,warp:'swirl',W:0.6}, scope:Object.assign({preset:'Gear', K:3}, SCOPES['Gear']) },
+  'Negative bow':    { trans:{fade:14,invert:true,mirror:'h'}, move:{zoom:0.03,rot:0.06,warp:'pinch'}, scope:Object.assign({preset:'Rotating bow'}, SCOPES['Rotating bow']), stars:{on:true} },
+  'Butterfly house': { trans:{fade:7,blur:1}, move:{zoom:-0.03,rot:0.005,warp:'ripple',W:0.5}, color:{speed:1.5,spread:140}, scope:Object.assign({preset:'Butterfly', width:1.5}, SCOPES['Butterfly']) },
+  'Star fan':        { trans:{fade:12,blur:1}, move:{zoom:-0.05,rot:0,warp:'none'}, scope:{on:false}, ostar:{on:true}, bspin:{on:true,arms:2,size:0.5,width:1} },
+  'Spectrogram':     { trans:{fade:0,blur:0}, move:{on:false}, color:{spread:200,speed:0}, scope:{on:false}, tscope:{on:true,width:2,speed:1.5} },
+  'Fountain':        { trans:{fade:9,blur:1}, move:{zoom:-0.02,rot:0,warp:'none'}, color:{band:true}, scope:{on:false}, fount:{on:true,rate:1.4,rotate:0.6}, simple:{on:true,kind:'spectrum',style:'dots',pos:'bottom',height:0.3} },
+  'Water scope':     { trans:{fade:4,blur:0}, move:{on:false}, water:{on:true}, scope:Object.assign({preset:'Circle', width:2}, SCOPES['Circle']), rstars:{on:true,count:3,size:0.08} },
+  'Dyna swirl':      { trans:{fade:6,blur:1}, move:{on:false}, dyna:{on:true,grid:28,fd:'d*(1-0.06*W*b)',fr:'r+0.08*W*sin(t*1.5+d*Q)*(1-d)'}, scope:Object.assign({preset:'Lissajous'}, SCOPES['Lissajous']), ring:{on:true,src:'bass'} },
+  'Text drop':       { trans:{fade:14,blur:1}, move:{zoom:0.04,rot:0.01,warp:'none'}, color:{band:false,speed:1}, scope:{on:false}, text:{on:true,size:0.28,bounce:1.4}, grid:{on:true,spacing:16,pulse:1} },
+  'Glitch mosaic':   { trans:{fade:12,blur:0}, move:{zoom:-0.03,rot:0,warp:'none'}, mosaic:{on:true,size:2,beatSize:10}, glitch:{on:true,beatShift:8,beatScatter:4}, scope:Object.assign({preset:'Spectrum bars', mode:'fill'}, SCOPES['Spectrum bars']) },
+  'Epitrochoid':     { trans:{fade:5,blur:1}, move:{zoom:-0.04,rot:0.03,warp:'bulge',W:0.5}, scope:Object.assign({preset:'Epitrochoid', K:2}, SCOPES['Epitrochoid']) }
+};
+const RE_DEF = {
+  feedback: { trail:0.90, zoom:1, zoomSrc:'bass', spin:1, spinSrc:'mid', wobble:1 },
+  ring:     { radius:0.19, expand:0.42, amp:0.34, glow:7, points:180, K:1 },
+  spokes:   { on:true, count:56, length:0.22, speed:1, width:1, floor:0.03 },
+  sparks:   { rate:1, speed:1, drag:0.985, life:1, size:1, beat:14 },
+  burst:    { on:true, speed:1, decay:0.90, width:3 },
+  color:    { hue:200, speed:0.12, treb:1.4, core:1 }
+};
+const CL_DEF = { main: { mode:'both', bands:40, fall:0.6, hold:18, scale:'log', gap:1, gain:1, scope:'line', grid:true, hue:0 } };
+
+const DEF = { v:3, engine:'milk', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5 };
+let S;
+{ let j = null; try { const raw = localStorage.getItem('spectral-drift'); if (raw) j = JSON.parse(raw); } catch(e){}
+  if (!j || (j.v !== 2 && j.v !== 3)) j = {};
+  if (j.v === 2){ j.autoCycle = false; j.beatSwitch = false; }     // v2 cycled presets by default; v3 stays put unless asked
+  S = Object.assign({}, DEF, j); S.v = 3;
+  S.avs = { preset: (j.avs && typeof j.avs.preset === 'string') ? j.avs.preset : 'Spiral tunnel', fx:{} }; S.reactor = { fx:{} }; S.classic = { fx:{} };
+  for (const k in AVS_DEF) S.avs.fx[k] = Object.assign({}, AVS_DEF[k], (j.avs && j.avs.fx && j.avs.fx[k]) || {});
+  for (const k in RE_DEF) S.reactor.fx[k] = Object.assign({}, RE_DEF[k], (j.reactor && j.reactor.fx && j.reactor.fx[k]) || {});
+  for (const k in CL_DEF) S.classic.fx[k] = Object.assign({}, CL_DEF[k], (j.classic && j.classic.fx && j.classic.fx[k]) || {});
+}
+function save(){ try { localStorage.setItem('spectral-drift', JSON.stringify(S)); } catch(e){} }
+let engine = 'reactor';
+
+/* ================= expression compiler (AVS-style per-point / per-pixel code) ================= */
+const FN = { sin:Math.sin, cos:Math.cos, tan:Math.tan, abs:Math.abs, sqrt:Math.sqrt, pow:Math.pow, min:Math.min, max:Math.max, exp:Math.exp, log:Math.log, floor:Math.floor, ceil:Math.ceil, round:Math.round, sign:Math.sign, atan:Math.atan, atan2:Math.atan2, asin:Math.asin, acos:Math.acos, rand:Math.random, sqr:x=>x*x, clamp:(x,a,b)=>x<a?a:x>b?b:x, mod:(a,b)=>a-b*Math.floor(a/b), step:(a,x)=>x<a?0:1, pi:Math.PI, e:Math.E };
+const FN_NAMES = Object.keys(FN), FN_VALS = Object.values(FN);
+function compile(expr, vars){
+  expr = String(expr||'').trim(); if (!expr) throw new Error('empty');
+  if (/[^\w\s+\-*\/%^(),.<>=?:!&|]/.test(expr)) throw new Error('character not allowed');
+  const ids = expr.match(/[A-Za-z_]\w*/g) || [];
+  for (const id of ids) if (!(id in FN) && !vars.includes(id)) throw new Error('unknown name: ' + id);
+  const f = new Function(...FN_NAMES, ...vars, 'return (' + expr.replace(/\^/g,'**') + ');');
+  const g = (...a) => f(...FN_VALS, ...a);
+  g(...vars.map(() => 0.5));
+  return g;
+}
+
+/* ================= audio graph: source → bus → [analyser, MilkDrop]; bus → monitor → vol → out ================= */
+const AC = window.AudioContext || window.webkitAudioContext;
+let actx = null, bus = null, monitor = null, volNode = null, analyser = null, src = null, live = null;
+let fft, wave, binHz;
+const T = { buffer:null, dur:0, offset:0, startedAt:0, playing:false, name:'Demo loop', kind:'demo' };
+function ensureCtx(){
+  if (actx) return actx;
+  actx = new AC();
+  bus = actx.createGain(); monitor = actx.createGain(); volNode = actx.createGain(); volNode.gain.value = S.vol/100;
+  analyser = actx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.45;
+  bus.connect(analyser); bus.connect(monitor); monitor.connect(volNode); volNode.connect(actx.destination);
+  fft = new Uint8Array(analyser.frequencyBinCount); wave = new Uint8Array(analyser.fftSize);
+  binHz = actx.sampleRate / analyser.fftSize;
+  $('#fftInfo').textContent = 'FFT 2048 · ' + binHz.toFixed(1) + ' Hz/bin';
+  initMilk();
+  return actx;
+}
+function pos(){ if (!T.buffer) return 0; return T.playing ? ((actx.currentTime - T.startedAt) % T.dur) : T.offset; }
+function play(){
+  ensureCtx(); if (actx.state !== 'running') actx.resume().catch(()=>{});
+  if (live) stopLive();
+  if (!T.buffer || T.playing) return;
+  src = actx.createBufferSource(); src.buffer = T.buffer; src.loop = true; src.connect(bus);
+  const off = T.offset % T.dur; src.start(0, off); T.startedAt = actx.currentTime - off; T.playing = true;
+  setPlayIcon('pause'); $('#hint').classList.add('gone'); wake(true);
+}
+function pause(){
+  if (!T.playing) return;
+  T.offset = pos(); try { src.stop(); } catch(e){} try { src.disconnect(); } catch(e){} src = null;
+  T.playing = false; setPlayIcon('play'); wake(false);
+}
+function seekTo(t){ const was = T.playing; pause(); T.offset = clamp(t, 0, Math.max(0, T.dur-0.01)); if (was) play(); }
+function setPlayIcon(m){ $('#icoPlay').hidden = m!=='play'; $('#icoPause').hidden = m!=='pause'; $('#icoStop').hidden = m!=='stop'; $('#btnPlay').setAttribute('aria-label', m==='play'?'Play':m==='pause'?'Pause':'Stop live input'); }
+function loadBuffer(buf, name, sub, kind){
+  const was = T.playing; pause(); if (live) stopLive();
+  T.buffer = buf; T.dur = buf.duration; T.offset = 0; T.name = name; T.kind = kind;
+  $('#trackName').textContent = name; $('#trackSub').textContent = sub; $('#tDur').textContent = fmt(T.dur); $('#seek').disabled = false;
+  if (was || kind==='file') play();
+}
+function fmt(s){ s = Math.max(0, s|0); return (s/60|0) + ':' + String(s%60).padStart(2,'0'); }
+function liveUI(name, sub){
+  $('#trackName').textContent = name; $('#trackSub').textContent = sub; $('#tCur').textContent = 'LIVE'; $('#tDur').textContent = ''; $('#seek').disabled = true; $('#seek').value = 0;
+  $('#liveTag').classList.add('on'); setPlayIcon('stop'); $('#hint').classList.add('gone'); wake(true);
+}
+function startLive(kind){
+  ensureCtx(); actx.resume().catch(()=>{});
+  const md = navigator.mediaDevices;
+  const unavailable = () => toast(kind==='mic' ? 'Microphone is not available in this viewer. Open the standalone file in Chrome to use it.' : 'System audio capture needs desktop Chrome or Edge.');
+  if (!md || (kind==='mic' ? !md.getUserMedia : !md.getDisplayMedia)) { unavailable(); return; }
+  const req = kind==='mic' ? md.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false }, video:false }) : md.getDisplayMedia({ video:true, audio:true });
+  req.then(stream => {
+    const at = stream.getAudioTracks();
+    if (!at.length){ stream.getTracks().forEach(t=>t.stop()); toast('That share had no audio. Pick a screen or tab and tick "Share audio".'); return; }
+    stream.getVideoTracks().forEach(t=>t.stop());
+    pause(); stopLive();
+    live = { stream, node: actx.createMediaStreamSource(stream), kind };
+    live.node.connect(bus); monitor.gain.value = 0;
+    at[0].addEventListener('ended', stopLive);
+    liveUI(kind==='mic' ? 'Microphone' : 'System audio', 'live input · analysed, not played back');
+  }).catch(err => {
+    if (kind==='sys') toast('No audio captured. On desktop Chrome or Edge, pick a screen or tab and tick "Share audio".');
+    else if (err && (err.name==='NotAllowedError' || err.name==='SecurityError')) toast('Microphone blocked. This viewer never allows it; open the standalone file in Chrome.');
+    else toast('Could not open the microphone: ' + (err && err.name || 'error'));
+  });
+}
+function stopLive(){
+  if (!live) return;
+  try { live.node.disconnect(); } catch(e){} if (live.stream) live.stream.getTracks().forEach(t=>t.stop()); if (live.kind==='device') stopDevice(); live = null; monitor.gain.value = 1;
+  $('#liveTag').classList.remove('on'); setPlayIcon('play'); $('#seek').disabled = false; wake(false);
+  if (T.buffer){ $('#trackName').textContent = T.name; $('#trackSub').textContent = T.kind==='demo' ? '124 BPM · synth house, 8 bars, loops' : fmt(T.dur) + ' · loops'; $('#tDur').textContent = fmt(T.dur); $('#tCur').textContent = fmt(T.offset); }
+  else { $('#trackName').textContent = 'Demo loop'; $('#trackSub').textContent = '124 BPM · synth house, 8 bars, loops'; $('#tCur').textContent = '0:00'; $('#tDur').textContent = '0:00'; }
+}
+let wl = null;
+function wake(on){
+  if (!('wakeLock' in navigator)) return;
+  if (on && !wl) navigator.wakeLock.request('screen').then(l => { wl = l; l.addEventListener('release', ()=>{ wl = null; }); }).catch(()=>{});
+  else if (!on && wl) { wl.release().catch(()=>{}); wl = null; }
+}
+
+/* ================= feed worklet: lets a host push raw samples into the bus (Android Visualizer, wallpaper hosts, Cast) ================= */
+let feedNode = null, feedReady = null;
+const WORKLET_SRC = "class Feed extends AudioWorkletProcessor{constructor(){super();this.buf=new Float32Array(0);this.pos=0;this.port.onmessage=e=>{this.buf=e.data;this.pos=0;};}process(inputs,outputs){const o=outputs[0][0];for(let i=0;i<o.length;i++){o[i]=this.pos<this.buf.length?this.buf[this.pos++]:0;}return true;}}registerProcessor('feed',Feed);";
+function ensureFeed(cb){
+  ensureCtx(); if (feedNode){ cb(); return; } if (!actx.audioWorklet) return;
+  if (!feedReady) feedReady = actx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC], { type:'application/javascript' })));
+  feedReady.then(() => { if (!feedNode){ feedNode = new AudioWorkletNode(actx, 'feed', { numberOfInputs:0, numberOfOutputs:1, outputChannelCount:[1] }); feedNode.connect(bus); } cb(); }).catch(() => { feedReady = null; });
+}
+function feedPush(f32){ if (feedNode) feedNode.port.postMessage(f32, [f32.buffer]); }
+
+/* ================= Android bridge: 8-bit waveform frames from the phone's output mix ================= */
+const android = (window.Android && typeof window.Android.frame === 'function') ? window.Android : null;
+/* Sender side: tell a connected Chromecast what the phone just chose. No-op when the app has no Cast session. */
+function castSend(cmd, v){ if (android && typeof android.castCommand === 'function') try { android.castCommand(cmd, String(v)); } catch(e){} }
+let devTimer = 0, devOn = false, devRatio = 1;
+function devPump(){ if (!devOn || !android) return; const b64 = android.frame();
+  if (b64){ const bin = atob(b64), n = bin.length, out = new Float32Array(Math.floor(n/devRatio)); for (let i=0;i<out.length;i++) out[i] = (bin.charCodeAt(Math.floor(i*devRatio)) - 128)/128; feedPush(out); } }
+function stopDevice(){ if (devTimer) cancelAnimationFrame(devTimer); devTimer = 0; devOn = false; if (android) try { android.stop(); } catch(e){} }
+function startDevice(){
+  if (!android) return;
+  ensureCtx(); actx.resume().catch(()=>{});
+  ensureFeed(() => {
+    pause(); stopLive();
+    if (!android.start()){ toast('Could not open device audio. Grant the microphone permission and make sure something is playing.'); return; }
+    devOn = true; monitor.gain.value = 0;
+    devRatio = ((android.sampleRate && android.sampleRate()) || 44100) / actx.sampleRate;
+    const pump = () => { if (!devOn) return; devPump(); devTimer = requestAnimationFrame(pump); };
+    pump();
+    live = { stream:null, node:feedNode, kind:'device' };
+    liveUI('Device audio', 'output mix · Spotify, YouTube Music, anything playing');
+  });
+}
+if (android){ $('#btnDevice').hidden = false; $('#btnSys').hidden = true; $('#btnDevice').addEventListener('click', startDevice); }
+
+/* ================= host audio: Lively Wallpaper / Wallpaper Engine / Cast receiver push 64–128 spectrum bins ~30 fps ================= */
+const HOST = { on:false, last:0, spec:new Float32Array(64), phase:new Float32Array(16), wave:new Float32Array(2048) };
+let hostMode = false;
+function hostAudio(arr){
+  if (!arr || arr.length < 64) return;
+  const two = arr.length >= 128; HOST.on = true; HOST.last = performance.now();
+  for (let i=0;i<64;i++){ const v = two ? ((+arr[i]||0) + (+arr[i+64]||0))*0.5 : (+arr[i]||0); HOST.spec[i] = v<0?0:v>1?1:v; }
+  if (!hostMode){ hostMode = true; if (!wave) wave = new Uint8Array(2048); liveUI('Host audio', 'spectrum pushed by the wallpaper host / cast sender'); document.body.classList.add('ui-hidden');
+    try { ensureCtx(); actx.resume().catch(()=>{}); monitor.gain.value = 0; ensureFeed(()=>{}); } catch(e){} }
+}
+window.livelyAudioListener = hostAudio;                                                    // Lively Wallpaper
+if (typeof window.wallpaperRegisterAudioListener === 'function') window.wallpaperRegisterAudioListener(hostAudio);   // Wallpaper Engine
+if (window.cast && window.cast.framework && window.cast.framework.CastReceiverContext){        // Google Cast custom receiver (receiver.html build)
+  try { const ctx = window.cast.framework.CastReceiverContext.getInstance(), NS = 'urn:x-cast:com.aarondoesit.spectraldrift';
+    ctx.addCustomMessageListener(NS, ev => { const d = ev.data; if (!d) return;
+      if (d.a) hostAudio(d.a);
+      else if (d.cmd==='engine') setEngine(d.v);
+      else if (d.cmd==='avs' && AVS_PRESETS[d.v]) avsApply(AVS_PRESETS[d.v], d.v);
+      else if (d.cmd==='preset' && names.includes(d.v)) loadPreset(names.indexOf(d.v));
+      else if (d.cmd==='motion'){ S.motion = clamp(+d.v||0, 0, 1); save(); }
+      else if (d.cmd==='color'){ S.colorPulse = clamp(+d.v||0, 0, 1); save(); } });
+    ctx.start({ disableIdleTimeout:true }); document.body.classList.add('ui-hidden'); } catch(e){}
+}
+
+/* ================= demo loop: rendered offline, 8 bars at 124 BPM ================= */
+let demoBuf = null;
+function renderDemo(){
+  if (demoBuf) return Promise.resolve(demoBuf);
+  const sr = actx.sampleRate, bpm = 124, beat = 60/bpm, bars = 8, dur = bars*4*beat;
+  const oc = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.floor(sr*dur), sr);
+  const comp = oc.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+  const mg = oc.createGain(); mg.gain.value = 0.9; comp.connect(mg); mg.connect(oc.destination);
+  const noise = oc.createBuffer(1, sr, sr); { const d = noise.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1; }
+  const f = m => 440*Math.pow(2,(m-69)/12);
+  const chords = [[57,60,64],[53,57,60],[60,64,67],[55,59,62]];
+  function env(g, t, peak, a, d, floor){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t+a); g.gain.exponentialRampToValueAtTime(floor||0.0001, t+a+d); }
+  function kick(t){ const o = oc.createOscillator(), g = oc.createGain(); o.type='sine'; o.frequency.setValueAtTime(165,t); o.frequency.exponentialRampToValueAtTime(42,t+0.11); env(g,t,1.0,0.004,0.38); o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.45);
+    const c = oc.createBufferSource(), cg = oc.createGain(), hp = oc.createBiquadFilter(); c.buffer=noise; hp.type='highpass'; hp.frequency.value=3000; env(cg,t,0.25,0.001,0.02); c.connect(hp); hp.connect(cg); cg.connect(comp); c.start(t); c.stop(t+0.05); }
+  function snare(t){ const n = oc.createBufferSource(), g = oc.createGain(), bp = oc.createBiquadFilter(); n.buffer=noise; bp.type='bandpass'; bp.frequency.value=1800; bp.Q.value=0.7; env(g,t,0.55,0.002,0.19); n.connect(bp); bp.connect(g); g.connect(comp); n.start(t); n.stop(t+0.25);
+    const o = oc.createOscillator(), og = oc.createGain(); o.type='triangle'; o.frequency.setValueAtTime(210,t); o.frequency.exponentialRampToValueAtTime(130,t+0.08); env(og,t,0.45,0.002,0.12); o.connect(og); og.connect(comp); o.start(t); o.stop(t+0.15); }
+  function hat(t, open){ const n = oc.createBufferSource(), g = oc.createGain(), hp = oc.createBiquadFilter(); n.buffer=noise; hp.type='highpass'; hp.frequency.value=8200; env(g,t,open?0.22:0.16,0.001,open?0.24:0.045); n.connect(hp); hp.connect(g); g.connect(comp); n.start(t); n.stop(t+(open?0.3:0.07)); }
+  function bass(t, m, len){ const o = oc.createOscillator(), g = oc.createGain(), lp = oc.createBiquadFilter(); o.type='sawtooth'; o.frequency.value=f(m); lp.type='lowpass'; lp.Q.value=7; lp.frequency.setValueAtTime(1100,t); lp.frequency.exponentialRampToValueAtTime(220,t+0.22); env(g,t,0.5,0.005,len*0.95); o.connect(lp); lp.connect(g); g.connect(comp); o.start(t); o.stop(t+len); }
+  function pad(t, len, notes){ const lp = oc.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(700,t); lp.frequency.linearRampToValueAtTime(1600,t+len*0.5); lp.frequency.linearRampToValueAtTime(700,t+len); const g = oc.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.05,t+0.35); g.gain.setValueAtTime(0.05,t+len-0.3); g.gain.linearRampToValueAtTime(0.0001,t+len); lp.connect(g); g.connect(comp);
+    notes.forEach(m => [-7,7].forEach(det => { const o = oc.createOscillator(); o.type='sawtooth'; o.frequency.value=f(m); o.detune.value=det; o.connect(lp); o.start(t); o.stop(t+len); })); }
+  function arp(t, m){ const o = oc.createOscillator(), g = oc.createGain(); o.type='triangle'; o.frequency.value=f(m); env(g,t,0.14,0.003,0.1); o.connect(g); g.connect(comp); o.start(t); o.stop(t+0.14); }
+  const bassPat = [0,0,0,12,0,0,7,0];
+  for (let b=0;b<bars;b++){
+    const chord = chords[Math.floor(b/2)%4], t0 = b*4*beat;
+    pad(t0, 4*beat, chord);
+    for (let i=0;i<4;i++){ const t = t0+i*beat; kick(t); if (i===1||i===3) snare(t); }
+    for (let i=0;i<8;i++){ const t = t0+i*beat/2; hat(t, i===7); bass(t, chord[0]-24+bassPat[i], beat/2); }
+    if (b>=4) for (let i=0;i<16;i++){ const t = t0+i*beat/4; arp(t, chord[i%3]+24+(i%4===3?12:0)); }
+  }
+  return oc.startRendering().then(buf => { demoBuf = buf; return buf; });
+}
+
+/* ================= analysis ================= */
+/* A.tBass/tMid/tTreb/tLevel/tBeat are what the music is really doing (meters, color pulse, hue push).
+   A.bass/mid/treb/level/beat are what the engines see: the same values pulled toward a steady resting state by the Motion dial. */
+const A = { bass:0, mid:0, treb:0, level:0, beat:0, tBass:0, tMid:0, tTreb:0, tLevel:0, tBeat:0, rawBass:0, bpm:0, lastBeat:0, hist:new Float32Array(43), hi:0, ivals:[] };
+const REST = 0.35;                                  // where a band settles when Motion is 0: enough energy to keep presets drifting, no jumps
+let tSec = 0;                                       // seconds, for the slow resting patterns
+const lerp = (a, b, k) => a + (b-a)*k;
+function applyMotion(){
+  const k = S.motion;
+  A.bass = lerp(REST, A.tBass, k); A.mid = lerp(REST, A.tMid, k); A.treb = lerp(REST, A.tTreb, k); A.level = lerp(REST, A.tLevel, k); A.beat = A.tBeat*k;
+}
+const specBuf = new Float32Array(75);
+function bandAvg(lo, hi){ let a = Math.max(1, Math.floor(lo/binHz)), b = Math.min(fft.length-1, Math.ceil(hi/binHz)), s = 0; for (let i=a;i<=b;i++) s += fft[i]; return s / ((b-a+1)*255); }
+function bandGain(f){ return f<250 ? 1.15 : f<2000 ? 1.7 : 2.6; }
+function smooth(cur, v){ return v > cur ? cur + (v-cur)*0.55 : cur*S.rel + v*(1-S.rel); }
+function beatStep(rb, now){
+  const e = rb*rb; let avg = 0; for (let i=0;i<A.hist.length;i++) avg += A.hist[i]; avg /= A.hist.length;
+  A.hist[A.hi] = e; A.hi = (A.hi+1) % A.hist.length;
+  A.tBeat *= 0.86;
+  if (e > avg*S.thr + 0.006 && e > 0.02 && now - A.lastBeat > 180){
+    A.tBeat = 1; if (A.lastBeat){ const iv = now - A.lastBeat; if (iv>250 && iv<1500){ A.ivals.push(iv); if (A.ivals.length>12) A.ivals.shift(); } }
+    A.lastBeat = now;
+    if (A.ivals.length>=4){ const s = A.ivals.slice().sort((x,y)=>x-y); A.bpm = Math.round(60000 / s[s.length>>1]); }
+    onBeat();
+  }
+  if (now - A.lastBeat > 2500) A.bpm = 0;
+}
+function analyse(now){
+  tSec = now/1000;
+  if (HOST.on && now - HOST.last < 800){ analyseHost(now); applyMotion(); return; } else if (HOST.on){ HOST.on = false; }
+  if (!analyser){ applyMotion(); return; }
+  analyser.getByteFrequencyData(fft); analyser.getByteTimeDomainData(wave);
+  const g = S.sens;
+  const rb = clamp(bandAvg(20,250)*1.15*g, 0, 1), rm = clamp(bandAvg(250,2000)*1.7*g, 0, 1), rt = clamp(bandAvg(2000,12000)*2.6*g, 0, 1);
+  let sum = 0; for (let i=0;i<wave.length;i+=4){ const d = (wave[i]-128)/128; sum += d*d; }
+  const rms = clamp(Math.sqrt(sum/(wave.length/4))*2.2*g, 0, 1);
+  A.tBass = smooth(A.tBass, rb); A.tMid = smooth(A.tMid, rm); A.tTreb = smooth(A.tTreb, rt); A.tLevel = smooth(A.tLevel, rms); A.rawBass = rb;
+  for (let i=0;i<75;i++){ const f0 = 40*Math.pow(350, i/75), f1 = 40*Math.pow(350, (i+1)/75); const v = clamp(bandAvg(f0,f1)*bandGain(f0)*g, 0, 1); specBuf[i] = v > specBuf[i] ? v : specBuf[i]*0.82 + v*0.18; }
+  beatStep(rb, now);
+  applyMotion();
+}
+function analyseHost(now){
+  const g = S.sens, sp = HOST.spec, mean = (a,b) => { let s = 0; for (let i=a;i<b;i++) s += sp[i]; return s/(b-a); };
+  const rb = clamp(mean(0,6)*1.2*g, 0, 1), rm = clamp(mean(6,28)*1.6*g, 0, 1), rt = clamp(mean(28,64)*2.2*g, 0, 1);
+  A.tBass = smooth(A.tBass, rb); A.tMid = smooth(A.tMid, rm); A.tTreb = smooth(A.tTreb, rt); A.rawBass = rb;
+  for (let i=0;i<75;i++){ const v = clamp(sp[Math.floor(i/75*64)]*g, 0, 1); specBuf[i] = v > specBuf[i] ? v : specBuf[i]*0.82 + v*0.18; }
+  const W = HOST.wave; W.fill(0); let peak = 0;
+  for (let k=0;k<16;k++){ const amp = mean(k*4, k*4+4)*g; if (amp < 0.015) continue; HOST.phase[k] += 0.02*(k+1); const f = 1 + (k+1)*(k+1)*0.45, ph = HOST.phase[k], w = 6.2832*f/2048;
+    for (let i=0;i<2048;i++) W[i] += amp*Math.sin(i*w + ph); }
+  for (let i=0;i<2048;i++){ const a = W[i]<0?-W[i]:W[i]; if (a > peak) peak = a; }
+  const lvl = clamp(mean(0,64)*2.5*g, 0, 1), norm = peak > 0 ? lvl/peak : 0;
+  for (let i=0;i<2048;i++) wave[i] = 128 + W[i]*norm*110;
+  A.tLevel = smooth(A.tLevel, lvl);
+  beatStep(rb, now);
+}
+/* Resting shapes for Motion 0: a slow breathing wave and a softly rolling spectrum, so scopes and bars glide instead of going flat. */
+function waveRest(u){ return 0.28*Math.sin(u*12.566 + tSec*0.6)*(0.65 + 0.35*Math.sin(tSec*0.23)); }
+function specRest(u){ return 0.2 + 0.14*(0.5 + 0.5*Math.sin(u*7.5 + tSec*0.5)); }
+function waveAt(u){ const k = S.motion; const v = wave ? (wave[Math.floor(clamp(u,0,0.9999)*wave.length)]-128)/128 : 0; return k >= 1 ? v : lerp(waveRest(u), v, k); }
+function specAt(u){ const k = S.motion; const v = specBuf[Math.floor(clamp(u,0,0.9999)*75)]; return k >= 1 ? v : lerp(specRest(u), v, k); }
+function specTrue(u){ return specBuf[Math.floor(clamp(u,0,0.9999)*75)]; }
+function srcVal(name){ return name==='bass'?A.bass : name==='mid'?A.mid : name==='treble'?A.treb : name==='beat'?A.beat : A.level; }
+
+/* ================= MilkDrop engine (Butterchurn) ================= */
+const milkCv = $('#milk'); let vis = null, milkOK = false;
+const presets = {}; let names = [], filtered = [], cur = -1, lastSwitch = 0;
+/* MilkDrop reads bass/mid/treb as "now vs. the last few seconds", so simply turning the music down changes nothing until it is silent.
+   To calm a preset we hand Butterchurn our own 1024-sample window: the music scaled by Motion, plus a steady carrier of fixed tones
+   (whole cycles per window, so its spectrum never flickers) scaled by 1 − Motion. The carrier holds every band at a constant level,
+   which the preset reads as "nothing is happening" — it keeps its own drift, zoom and rotation but stops jumping on the beat. */
+const milkBuf = new Uint8Array(1024), SINE = new Float32Array(1024); for (let i=0;i<1024;i++) SINE[i] = Math.sin(i/1024*6.283185307);
+const CARRIER = [ [2,14,0.05], [4,12,0.07], [12,11,0.11], [24,10,0.13], [40,9,0.17], [80,6,0.19], [130,5,0.23], [200,4,0.29] ];   // cycles/window, amplitude (byte), phase drift (cycles/s)
+function milkAudio(){
+  const k = S.motion, src = wave ? wave.subarray(wave.length-1024) : null;
+  if (k >= 1 && src) return src;
+  const c = 1 - k, ph = CARRIER.map(q => Math.floor(tSec*q[2]*1024) & 1023);
+  for (let i=0;i<1024;i++){
+    let v = src ? (src[i]-128)*k : 0;
+    for (let j=0;j<8;j++) v += CARRIER[j][1]*SINE[(CARRIER[j][0]*i + ph[j]) & 1023]*c;
+    milkBuf[i] = v < -127 ? 1 : v > 127 ? 255 : (128 + v)|0;
+  }
+  return milkBuf;
+}
+function renderMilk(){
+  if (!vis) return;
+  const a = milkAudio();
+  try { vis.render(a ? { audioLevels: { timeByteArray:a, timeByteArrayL:a, timeByteArrayR:a } } : undefined); } catch(e){}
+}
+function pixelRatio(){ const d = window.devicePixelRatio || 1; return [0.75, Math.min(d,1.5), Math.min(d,2.5)][S.quality|0]; }
+function initMilk(){
+  if (vis || milkOK) return;
+  const BC = window.butterchurn && (window.butterchurn.default || window.butterchurn);
+  if (!BC || !BC.createVisualizer){ milkFail('MilkDrop engine did not load (script blocked or offline).'); return; }
+  try { const r = stageRect(); vis = BC.createVisualizer(actx, milkCv, { width:r.w, height:r.h, pixelRatio:pixelRatio(), textureRatio:1 }); vis.connectAudio(bus); milkOK = true; }
+  catch(e){ milkFail('MilkDrop needs WebGL2, which this browser refused.'); return; }
+  const P = window.butterchurnPresets && (window.butterchurnPresets.getPresets ? window.butterchurnPresets : window.butterchurnPresets.default);
+  if (P && P.getPresets) addPresets(P.getPresets());
+  if (!names.length) $('#milkNote').textContent = 'Preset pack did not load.';
+  let want = names.indexOf(S.preset);
+  if (want < 0) want = names.indexOf('Flexi, martin + geiss - dedicated to the sherwin maxawow');
+  if (want < 0) want = Math.floor(Math.random()*names.length);
+  loadPreset(want, 0);
+  setEngine(S.engine);
+}
+function milkFail(msg){ $('#engineSel').querySelector('[value=milk]').disabled = true; $('#milkNote').textContent = msg + ' The other three visualizers still run.'; setEngine(S.engine); }
+function addPresets(obj){ let n = 0; for (const k in obj){ if (!presets[k]){ presets[k] = obj[k]; n++; } } names = Object.keys(presets).sort((a,b)=>a.localeCompare(b)); applyFilter(); $('#presetCount').textContent = names.length; return n; }
+function applyFilter(){
+  const q = $('#presetSearch').value.trim().toLowerCase();
+  filtered = q ? names.filter(n => n.toLowerCase().includes(q)) : names.slice();
+  const sel = $('#presetSel'); sel.innerHTML = ''; const frag = document.createDocumentFragment();
+  filtered.forEach(n => { const o = el('option'); o.value = n; o.textContent = n; frag.appendChild(o); });
+  sel.appendChild(frag); if (cur >= 0 && filtered.includes(names[cur])) sel.value = names[cur];
+}
+function loadPreset(i, blend){
+  if (!vis || !names.length) return;
+  cur = ((i % names.length) + names.length) % names.length; const n = names[cur];
+  try { vis.loadPreset(presets[n], blend == null ? S.blend : blend); } catch(e){ toast('Preset failed to compile: ' + n); return; }
+  S.preset = n; save(); lastSwitch = performance.now(); if (filtered.includes(n)) $('#presetSel').value = n; flash(n); castSend('preset', n);
+}
+function stepPreset(d){
+  if (engine==='avs'){ avsStep(d); return; }
+  if (!names.length) return; const pool = filtered.length ? filtered : names; const n = pool[((pool.indexOf(names[cur]) + d) % pool.length + pool.length) % pool.length]; loadPreset(names.indexOf(n)); }
+function randPreset(){
+  if (engine==='avs'){ avsRandomize(); return; }
+  if (!names.length) return; const pool = filtered.length ? filtered : names; let n; do { n = pool[Math.floor(Math.random()*pool.length)]; } while (pool.length>1 && n===names[cur]); loadPreset(names.indexOf(n)); }
+let flashT = 0; function flash(txt){ const f = $('#flash'); f.textContent = txt; f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(()=>f.classList.remove('show'), 2600); }
+let toastT = 0; function toast(txt){ const t = $('#toast'); t.textContent = txt; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 3600); }
+let extraLoaded = false;
+function loadExtra(){
+  if (extraLoaded) return; const b = $('#btnExtra'); b.disabled = true; b.textContent = 'Loading…';
+  const s = el('script'); s.src = 'https://cdn.jsdelivr.net/npm/butterchurn-presets@2.4.7/lib/butterchurnPresetsExtra.min.js';
+  s.onload = () => { const X = window.butterchurnPresetsExtra && (window.butterchurnPresetsExtra.getPresets ? window.butterchurnPresetsExtra : window.butterchurnPresetsExtra.default); const n = X && X.getPresets ? addPresets(X.getPresets()) : 0; extraLoaded = true; b.textContent = '+' + n + ' presets added'; toast(n + ' extra presets added'); };
+  s.onerror = () => { b.disabled = false; b.textContent = 'Load extra pack (+100)'; toast('Extra pack failed to load'); };
+  document.head.appendChild(s);
+}
+function onBeat(){
+  if (engine==='milk' && S.beatSwitch && A.rawBass > 0.6 && performance.now() - lastSwitch > Math.max(4000, S.cycle*250)) randPreset();
+  if (engine==='reactor' && S.reactor.fx.burst.on && S.motion > 0.12) bursts.push({ r: ringR, a: 0.95*S.motion });
+}
+
+/* ================= AVS pixel ops (pure functions on typed arrays) ================= */
+function opFade(d, n, f){ if (f > 0){ for (let i=0;i<n;i+=4){ d[i] = d[i]>f?d[i]-f:0; d[i+1] = d[i+1]>f?d[i+1]-f:0; d[i+2] = d[i+2]>f?d[i+2]-f:0; } } else if (f < 0){ f = -f; for (let i=0;i<n;i+=4){ d[i] += f; d[i+1] += f; d[i+2] += f; } } }
+function opBlur(d, tmp, W, H, passes){
+  const W4 = W*4;
+  for (let p=0;p<passes;p++){
+    for (let y=0;y<H;y++){ const row = y*W4; for (let x=0;x<W;x++){ const i = row+x*4, l = x? i-4 : i, r = x<W-1 ? i+4 : i; tmp[i] = (d[l]+d[i]*2+d[r])>>2; tmp[i+1] = (d[l+1]+d[i+1]*2+d[r+1])>>2; tmp[i+2] = (d[l+2]+d[i+2]*2+d[r+2])>>2; } }
+    for (let y=0;y<H;y++){ const row = y*W4, up = y? row-W4 : row, dn = y<H-1 ? row+W4 : row; for (let x=0;x<W4;x+=4){ const i = row+x, u = up+x, b = dn+x; d[i] = (tmp[u]+tmp[i]*2+tmp[b])>>2; d[i+1] = (tmp[u+1]+tmp[i+1]*2+tmp[b+1])>>2; d[i+2] = (tmp[u+2]+tmp[i+2]*2+tmp[b+2])>>2; } }
+  }
+}
+function opLUT(px, out, lut, N){ for (let i=0;i<N;i++) out[i] = px[lut[i]]; px.set(out.subarray(0,N)); }
+function opMirror(px, W, H, mode){
+  if (mode==='h' || mode==='quad'){ const half = W>>1; for (let y=0;y<H;y++){ const row = y*W; for (let x=0;x<half;x++) px[row+W-1-x] = px[row+x]; } }
+  if (mode==='v' || mode==='quad'){ const half = H>>1; for (let y=0;y<half;y++) px.copyWithin((H-1-y)*W, y*W, y*W+W); }
+}
+function opGrain(d, n, g){ for (let i=0;i<n;i+=16){ const r = (Math.random()-0.5)*g; d[i] += r; d[i+1] += r; d[i+2] += r; } }
+function opInvert(d, n){ for (let i=0;i<n;i+=4){ d[i] = 255-d[i]; d[i+1] = 255-d[i+1]; d[i+2] = 255-d[i+2]; } }
+function opLevels(d, n, bright, contrast, post){
+  const k = contrast ? (259*(contrast+255))/(255*(259-contrast)) : 1, q = post>1 ? 255/(post-1) : 0;
+  for (let i=0;i<n;i+=4) for (let c=0;c<3;c++){ let v = d[i+c]; if (contrast) v = k*(v-128)+128; v += bright; if (q) v = Math.round(v/q)*q; d[i+c] = v; }
+}
+function opMosaic(px, W, H, s){ s = s|0; if (s<=1) return; for (let y=0;y<H;y+=s){ const y1 = Math.min(y+s,H); for (let x=0;x<W;x+=s){ const v = px[y*W+x], x1 = Math.min(x+s,W); for (let yy=y;yy<y1;yy++) px.fill(v, yy*W+x, yy*W+x1); } } }
+function opGlitch(d, tmp, W, H, shift, scatter){
+  shift = Math.round(shift);
+  if (shift){ tmp.set(d); const W4 = W*4; for (let y=0;y<H;y++){ const row = y*W4; for (let x=0;x<W;x++){ const i = row+x*4, xr = clamp(x-shift,0,W-1), xb = clamp(x+shift,0,W-1); d[i] = tmp[row+xr*4]; d[i+2] = tmp[row+xb*4+2]; } } }
+  if (scatter >= 1){ const px = new Uint32Array(d.buffer), cnt = (W*H*0.08)|0, r = Math.round(scatter); for (let k=0;k<cnt;k++){ const i = (Math.random()*W*H)|0, j = clamp(i + ((Math.random()*2-1)*r|0) + ((Math.random()*2-1)*r|0)*W, 0, W*H-1); const t = px[i]; px[i] = px[j]; px[j] = t; } }
+}
+function opWater(d, tmp, W, H, c, st, env, dt){
+  const N = W*H; if (!st.h1 || st.h1.length !== N){ st.h1 = new Float32Array(N); st.h2 = new Float32Array(N); }
+  const drop = (x0, y0, rad, amp) => { const x1 = Math.max(1,x0-rad), x2 = Math.min(W-2,x0+rad), y1 = Math.max(1,y0-rad), y2 = Math.min(H-2,y0+rad); for (let y=y1;y<=y2;y++) for (let x=x1;x<=x2;x++){ const dd = Math.sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)); if (dd<=rad) st.h1[y*W+x] += amp*(1-dd/rad); } };
+  if (c.drops > 0 && Math.random() < c.drops*0.25*dt) drop(1+(Math.random()*(W-2))|0, 1+(Math.random()*(H-2))|0, c.radius|0, 50+Math.random()*60);
+  if (c.beatDrop){ if (env.beat > 0.9 && !st.latch){ drop(W>>1, H>>1, (c.radius*2)|0, 160); st.latch = true; } if (env.beat < 0.5) st.latch = false; }
+  const h1 = st.h1, h2 = st.h2, damp = c.damp;
+  for (let y=1;y<H-1;y++){ const row = y*W; for (let x=1;x<W-1;x++){ const i = row+x; h2[i] = ((h1[i-1]+h1[i+1]+h1[i-W]+h1[i+W])*0.5 - h2[i])*damp; } }
+  st.h1 = h2; st.h2 = h1; const h = h2;
+  const px = new Uint32Array(d.buffer), out = new Uint32Array(tmp.buffer), k = c.strength*0.08, sh = c.shade*0.9;
+  for (let y=0;y<H;y++){ const row = y*W, up = y? row-W : row, dn = y<H-1 ? row+W : row;
+    for (let x=0;x<W;x++){ const i = row+x, l = x? i-1 : i, r = x<W-1 ? i+1 : i; const dx = (h[l]-h[r])*k, dy = (h[up+x]-h[dn+x])*k;
+      let X = x + dx, Y = y + dy; X = X<0?0:X>=W?W-1:X; Y = Y<0?0:Y>=H?H-1:Y; out[i] = px[(Y|0)*W + (X|0)]; } }
+  px.set(out.subarray(0,N));
+  if (sh){ for (let y=0;y<H;y++){ const row = y*W; for (let x=1;x<W;x++){ const i = row+x, s = (h[i-1]-h[i])*sh; if (s > 1 || s < -1){ const j = i*4; d[j] += s; d[j+1] += s; d[j+2] += s; } } } }
+}
+function opDyna(d, tmp, W, H, c, st, fD, fR, env){
+  const gw = Math.max(2, c.grid|0), gh = Math.max(2, Math.round(gw*H/W)), nn = (gw+1)*(gh+1);
+  if (!st.nodes || st.nodes.length !== nn*2) st.nodes = new Float32Array(nn*2);
+  const nodes = st.nodes, asp = W/H;
+  for (let gy=0;gy<=gh;gy++) for (let gx=0;gx<=gw;gx++){
+    const sx = (gx/gw*2-1)*asp, sy = gy/gh*2-1, d0 = Math.sqrt(sx*sx+sy*sy), r0 = Math.atan2(sy,sx);
+    let d1 = fD(d0, r0, sx, sy, env.t, env.b, env.m, env.h, env.l, env.beat, c.W, c.Q), r1 = fR(d0, r0, sx, sy, env.t, env.b, env.m, env.h, env.l, env.beat, c.W, c.Q);
+    if (!isFinite(d1)) d1 = d0; if (!isFinite(r1)) r1 = r0;
+    const k = (gy*(gw+1)+gx)*2; nodes[k] = (Math.cos(r1)*d1/asp+1)/2*W; nodes[k+1] = (Math.sin(r1)*d1+1)/2*H;
+  }
+  const px = new Uint32Array(d.buffer), out = new Uint32Array(tmp.buffer), N = W*H, cw = W/gw, ch = H/gh;
+  for (let y=0;y<H;y++){ const gy = y/ch, iy = Math.min(gh-1, gy|0), fy = gy-iy, ra = iy*(gw+1), rb = ra+gw+1, row = y*W;
+    for (let x=0;x<W;x++){ const gx = x/cw, ix = Math.min(gw-1, gx|0), fx = gx-ix, a = (ra+ix)*2, b = (rb+ix)*2;
+      const sx = (nodes[a]*(1-fx) + nodes[a+2]*fx)*(1-fy) + (nodes[b]*(1-fx) + nodes[b+2]*fx)*fy, sy = (nodes[a+1]*(1-fx) + nodes[a+3]*fx)*(1-fy) + (nodes[b+1]*(1-fx) + nodes[b+3]*fx)*fy;
+      const X = sx<0?0:sx>=W?W-1:sx|0, Y = sy<0?0:sy>=H?H-1:sy|0; out[row+x] = px[Y*W+X]; } }
+  if (c.blend){ for (let i=0;i<N;i++) px[i] = (((px[i]&0xfefefe)>>>1) + ((out[i]&0xfefefe)>>>1)) | 0xff000000; } else px.set(out.subarray(0,N));
+}
+
+/* ================= AVS engine ================= */
+const avsCv = $('#avs'), avsCtx = avsCv.getContext('2d');
+const AV = { W:0, H:0, cv:el('canvas'), ctx:null, tmp:null, lut:null, lutKey:'', stars:[], planeRows:[], planeOff:0, hue:0, t0:performance.now(), scopeX:null, scopeY:null, moveD:null, moveR:null, dynaD:null, dynaR:null, water:{}, dyna:{}, fount:[], gridOx:0, gridOy:0, tcol:0, bspinA:0, mosaicB:0, glitchB:0 };
+AV.ctx = AV.cv.getContext('2d', { willReadFrequently:true });
+const SCOPE_VARS = ['i','v','s','t','b','m','h','l','beat','n','r','A','F','P','R','K','X','Y','ar','ay'];
+const MOVE_VARS = ['d','r','x','y','W','Q'];
+const DYNA_VARS = ['d','r','x','y','t','b','m','h','l','beat','W','Q'];
+function compileFormulas(fxKey){
+  if (fxKey==='scope' || !fxKey){ const c = S.avs.fx.scope, errs = { fx:'', fy:'' };
+    try { AV.scopeX = compile(c.fx, SCOPE_VARS); } catch(e){ errs.fx = e.message; } try { AV.scopeY = compile(c.fy, SCOPE_VARS); } catch(e){ errs.fy = e.message; }
+    ['fx','fy'].forEach(k => { const n = $('#err-avs-scope-' + k); if (n) n.textContent = errs[k]; }); }
+  if (fxKey==='move' || !fxKey){ const c = S.avs.fx.move, errs = { fd:'', fr:'' };
+    try { AV.moveD = compile(c.fd, MOVE_VARS); } catch(e){ errs.fd = e.message; AV.moveD = null; } try { AV.moveR = compile(c.fr, MOVE_VARS); } catch(e){ errs.fr = e.message; AV.moveR = null; }
+    ['fd','fr'].forEach(k => { const n = $('#err-avs-move-' + k); if (n) n.textContent = errs[k]; }); AV.lutKey = ''; }
+  if (fxKey==='dyna' || !fxKey){ const c = S.avs.fx.dyna, errs = { fd:'', fr:'' };
+    try { AV.dynaD = compile(c.fd, DYNA_VARS); } catch(e){ errs.fd = e.message; AV.dynaD = null; } try { AV.dynaR = compile(c.fr, DYNA_VARS); } catch(e){ errs.fr = e.message; AV.dynaR = null; }
+    ['fd','fr'].forEach(k => { const n = $('#err-avs-dyna-' + k); if (n) n.textContent = errs[k]; }); }
+}
+function avsSize(){
+  const r = stageRect(); const long = 320; let W, H;
+  if (r.w >= r.h){ W = long; H = Math.max(96, Math.round(long*r.h/r.w)); } else { H = long; W = Math.max(96, Math.round(long*r.w/r.h)); }
+  if (W===AV.W && H===AV.H) return;
+  AV.W = W; AV.H = H; AV.cv.width = W; AV.cv.height = H; avsClear();
+  AV.tmp = new Uint8ClampedArray(W*H*4); AV.lut = new Int32Array(W*H); AV.lutKey = '';
+  AV.stars = []; AV.planeRows = []; AV.water = {}; AV.dyna = {}; AV.fount = [];
+  $('#avsRes').textContent = W + '×' + H + ' px';
+}
+function avsBuildLUT(){
+  const c = S.avs.fx.move, key = JSON.stringify([c.zoom,c.rot,c.warp,c.W,c.Q,c.cx,c.cy,c.wrap,c.fd,c.fr,AV.W,AV.H]); if (key === AV.lutKey) return; AV.lutKey = key;
+  const W = AV.W, H = AV.H, asp = W/H, lut = AV.lut, zf = 1 + c.zoom, W_ = c.W, Q = c.Q, cxo = c.cx*asp, cyo = c.cy;
+  const custom = c.warp==='custom' && AV.moveD && AV.moveR;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    let sx = ((x+0.5)/W*2-1)*asp - cxo, sy = (y+0.5)/H*2-1 - cyo;
+    let d = Math.sqrt(sx*sx+sy*sy), r = Math.atan2(sy,sx);
+    switch (c.warp){
+      case 'swirl':  r += 0.45*W_*(1-Math.min(d,1.2)); break;
+      case 'tunnel': d -= 0.05*W_; break;
+      case 'ripple': d += 0.025*W_*Math.sin(d*Q); break;
+      case 'pinch':  d = Math.pow(d, 1+0.25*W_); break;
+      case 'bulge':  d = Math.pow(d, 1/(1+0.25*W_)); break;
+      case 'custom': if (custom){ const d0 = d, r0 = r; d = AV.moveD(d0, r0, sx, sy, W_, Q); r = AV.moveR(d0, r0, sx, sy, W_, Q); if (!isFinite(d)) d = d0; if (!isFinite(r)) r = r0; } break;
+    }
+    d *= zf; r += c.rot;
+    sx = Math.cos(r)*d + cxo; sy = Math.sin(r)*d + cyo;
+    if (c.warp==='wave'){ sx += 0.04*W_*Math.sin(sy*Q*0.6); sy += 0.03*W_*Math.sin(sx*Q*0.4); }
+    let ix = Math.floor((sx/asp+1)/2*W), iy = Math.floor((sy+1)/2*H);
+    if (c.wrap){ ix = ((ix%W)+W)%W; iy = ((iy%H)+H)%H; } else { ix = ix<0?0:ix>=W?W-1:ix; iy = iy<0?0:iy>=H?H-1:iy; }
+    lut[y*W+x] = iy*W+ix;
+  }
+}
+function avsClear(){ AV.ctx.fillStyle = '#000'; AV.ctx.fillRect(0,0,AV.W,AV.H); }
+function avsColor(u, alpha){
+  const c = S.avs.fx.color;
+  if (c.band) return u<0.33 ? 'rgba(255,107,61,'+alpha+')' : u<0.66 ? 'rgba(246,195,68,'+alpha+')' : 'rgba(63,215,199,'+alpha+')';
+  return 'hsla(' + ((AV.hue + u*c.spread)|0) + ',' + c.sat + '%,' + c.light + '%,' + alpha + ')';
+}
+function starPath(ctx, cx, cy, R, pts, rot){ const inner = R*0.45; ctx.beginPath(); for (let i=0;i<pts*2;i++){ const a = rot + i*Math.PI/pts - Math.PI/2, rr = i%2 ? inner : R; const x = cx + Math.cos(a)*rr, y = cy + Math.sin(a)*rr; i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); } ctx.closePath(); }
+function renderAVS(now, dt){
+  if (!AV.W) avsSize();
+  const W = AV.W, H = AV.H, F = S.avs.fx, ctx = AV.ctx, t = (now - AV.t0)/1000, env = { t, b:A.bass, m:A.mid, h:A.treb, l:A.level, beat:A.beat };
+  const tr = F.trans, img = ctx.getImageData(0,0,W,H), d = img.data, n = d.length, px = new Uint32Array(d.buffer), tmp = AV.tmp;
+  // ---- Trans: fade → blur → movement → dynamic movement → water → mosaic → glitch → mirror → levels → grain → invert
+  if (tr.fade) opFade(d, n, tr.fade);
+  if (tr.blur > 0) opBlur(d, tmp, W, H, tr.blur===2 ? tr.passes*2 : tr.passes);
+  const mv = F.move;
+  if (mv.on && (mv.zoom !== 0 || mv.rot !== 0 || mv.warp !== 'none' || mv.cx || mv.cy)){ avsBuildLUT(); opLUT(px, new Uint32Array(tmp.buffer), AV.lut, W*H); }
+  if (F.dyna.on && AV.dynaD && AV.dynaR) opDyna(d, tmp, W, H, F.dyna, AV.dyna, AV.dynaD, AV.dynaR, env);
+  if (F.water.on) opWater(d, tmp, W, H, F.water, AV.water, env, dt);
+  if (F.mosaic.on){ AV.mosaicB = Math.max(AV.mosaicB*Math.pow(F.mosaic.decay, dt), A.beat > 0.9 ? F.mosaic.beatSize : 0); opMosaic(px, W, H, F.mosaic.size + AV.mosaicB); }
+  if (F.glitch.on){ AV.glitchB = Math.max(AV.glitchB*Math.pow(F.glitch.decay, dt), A.beat > 0.9 ? 1 : 0); opGlitch(d, tmp, W, H, F.glitch.shift + F.glitch.beatShift*AV.glitchB, F.glitch.scatter + F.glitch.beatScatter*AV.glitchB); }
+  if (tr.mirror !== 'none') opMirror(px, W, H, tr.mirror);
+  if (tr.bright || tr.contrast || tr.posterize > 1) opLevels(d, n, tr.bright, tr.contrast, tr.posterize);
+  if (tr.grain > 0) opGrain(d, n, tr.grain);
+  if (tr.invert) opInvert(d, n);
+  ctx.putImageData(img, 0, 0);
+  // ---- Render effects
+  const cx = W/2, cy = H/2, m = Math.min(W,H)/2, ar = W/(2*m), ay = H/(2*m); AV.hue = (AV.hue + F.color.speed + A.tTreb*F.color.treb) % 360;
+  ctx.lineWidth = 1; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const st = F.stars;
+  if (st.on){ while (AV.stars.length < st.count) AV.stars.push({ x:(Math.random()*2-1)*st.spread, y:(Math.random()*2-1)*st.spread, z:Math.random() }); if (AV.stars.length > st.count) AV.stars.length = st.count;
+    const sp = (0.004 + A.bass*0.03*st.bass)*st.speed*dt; ctx.fillStyle = '#fff';
+    for (const s of AV.stars){ s.z -= sp; if (s.z <= 0.02){ s.x = (Math.random()*2-1)*st.spread; s.y = (Math.random()*2-1)*st.spread; s.z = 1; } const px = cx + s.x/s.z*m*0.5, py = cy + s.y/s.z*m*0.5; if (px<0||py<0||px>=W||py>=H){ s.z = 1; s.x = (Math.random()*2-1)*st.spread; s.y = (Math.random()*2-1)*st.spread; continue; }
+      ctx.globalAlpha = clamp((1 - s.z*0.85)*(1 - st.twinkle*Math.random()*A.treb), 0, 1); const sz = (s.z<0.3?2:1)*st.size; ctx.fillRect(px, py, sz, sz); }
+    ctx.globalAlpha = 1; }
+  const gr = F.grid;
+  if (gr.on){ const sp = Math.max(3, gr.spacing|0); AV.gridOx = (AV.gridOx + gr.vx*dt + sp) % sp; AV.gridOy = (AV.gridOy + gr.vy*dt + sp) % sp; ctx.fillStyle = avsColor(0.5, 1); ctx.globalAlpha = clamp(0.25 + A.level*0.75*gr.pulse, 0, 1);
+    for (let y=AV.gridOy-sp;y<H;y+=sp) for (let x=AV.gridOx-sp;x<W;x+=sp) ctx.fillRect(x, y, gr.size, gr.size); ctx.globalAlpha = 1; }
+  const pl = F.plane;
+  if (pl.on){ const rows = pl.rows|0, cols = pl.cols|0; while (AV.planeRows.length < rows) AV.planeRows.push(new Float32Array(64)); if (AV.planeRows.length > rows) AV.planeRows.length = rows;
+    AV.planeOff += (0.012 + A.bass*0.03)*pl.speed*dt;
+    if (AV.planeOff >= 1){ AV.planeOff -= 1; const last = AV.planeRows.pop(); for (let i=0;i<cols;i++) last[i] = specAt(i/cols); AV.planeRows.unshift(last); }
+    for (let j=0;j<rows;j++){ const z = pl.dir==='toward' ? 1 - (j + AV.planeOff)/rows : (j + AV.planeOff)/rows, persp = 1/(0.6+z*3*pl.persp), row = AV.planeRows[j], yb = cy*0.45 + H*0.45*persp;
+      for (let i=0;i<cols;i++){ const h = row[i] + pl.ripple*0.15*Math.sin(i*0.6 + t*3 + j*0.4), x = cx + (i/(cols-1)*2-1)*W*0.9*persp, y = yb - h*H*0.45*pl.height*persp; ctx.fillStyle = avsColor(i/cols, (0.35+clamp(h,0,1)*0.65).toFixed(2)); const sz = (persp>0.9?2:1)*pl.size; ctx.fillRect(x, y, sz, sz); } } }
+  const fo = F.fount;
+  if (fo.on){ const val = srcVal(fo.src), spawn = Math.floor(val*fo.rate*5 + fo.rate*0.6);
+    for (let i=0;i<spawn && AV.fount.length<700;i++){ const a = Math.random()*6.2832, sp = (0.3+Math.random()*0.7)*fo.spread*0.012; AV.fount.push({ x:Math.cos(a)*0.03, z:Math.sin(a)*0.03, y:0.45, vx:Math.cos(a)*sp, vz:Math.sin(a)*sp, vy:-(0.02+Math.random()*0.025)*(1+val*1.5), l:1, c:Math.random() }); }
+    const rot = t*fo.rotate, cr = Math.cos(rot), sr = Math.sin(rot);
+    for (let i=AV.fount.length-1;i>=0;i--){ const p = AV.fount[i]; p.vy += 0.0012*fo.gravity*dt; p.x += p.vx*dt; p.z += p.vz*dt; p.y += p.vy*dt; p.l -= dt/(90*fo.life); if (p.l<=0 || p.y > 0.6){ AV.fount[i] = AV.fount[AV.fount.length-1]; AV.fount.pop(); continue; }
+      const rx = p.x*cr - p.z*sr, rz = p.x*sr + p.z*cr, persp = 1/(1.5+rz*1.2); ctx.fillStyle = avsColor(p.c, p.l.toFixed(2)); const sz = fo.size*(persp>0.75?2:1); ctx.fillRect(cx + rx*m*2.2*persp, cy + p.y*m*2.2*persp, sz, sz); } }
+  const ts = F.tscope;
+  if (ts.on){ AV.tcol += ts.speed*dt; const w = Math.max(1, ts.width|0), col = Math.floor(AV.tcol) % Math.ceil(W/w), x = ts.dir==='right' ? col*w : W - (col+1)*w, N = ts.bands|0, bh = H*ts.height/N;
+    for (let i=0;i<N;i++){ const v = specAt(i/N); if (v < 0.02) continue; ctx.fillStyle = avsColor(i/N, clamp(v*1.4,0,1).toFixed(2)); ctx.fillRect(x, H - (i+1)*bh, w, Math.ceil(bh)); } }
+  const si = F.simple;
+  if (si.on){ ctx.fillStyle = avsColor(0.5, 1); ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = si.width;
+    const base = si.pos==='bottom' ? H : si.pos==='top' ? 0 : cy, dir = si.pos==='top' ? 1 : -1, hh = H*si.height;
+    if (si.kind==='spectrum'){ const N = si.bands|0, bw = W/N;
+      for (let i=0;i<N;i++){ const v = specAt((i+0.5)/N), h = v*hh, x = i*bw, w = Math.max(1, bw-1); if (F.color.band) ctx.fillStyle = avsColor(i/N, 1);
+        if (si.style==='dots'){ ctx.fillRect(x, base + dir*h, w, 1); if (si.mirror) ctx.fillRect(x, base - dir*h, w, 1); }
+        else if (si.style==='line'){ ctx.fillRect(x, base + dir*h, w, si.width); if (si.mirror) ctx.fillRect(x, base - dir*h, w, si.width); }
+        else { ctx.fillRect(x, dir<0 ? base-h : base, w, h); if (si.mirror) ctx.fillRect(x, dir<0 ? base : base-h, w, h); } } }
+    else { ctx.beginPath(); for (let x=0;x<=W;x++){ const y = base + dir*(-waveAt(x/W))*hh*0.5 + (si.pos==='center' ? 0 : dir*hh*0.5);
+        if (si.style==='dots') ctx.fillRect(x, y, 1, 1); else if (si.style==='solid'){ const b0 = si.pos==='center' ? cy : base + dir*hh*0.5; ctx.fillRect(x, Math.min(y,b0), 1, Math.abs(y-b0)+1); } else { x ? ctx.lineTo(x,y) : ctx.moveTo(x,y); } }
+      if (si.style==='line') ctx.stroke(); }
+    ctx.lineWidth = 1; }
+  const sc = F.scope;
+  if (sc.on && AV.scopeX && AV.scopeY){ const N = sc.n|0, K = Math.max(1, sc.K|0); ctx.lineWidth = sc.width; ctx.strokeStyle = avsColor(0.5, 1); ctx.fillStyle = ctx.strokeStyle;
+    for (let k=0;k<K;k++){ const ang = sc.rotate*Math.PI/180 + k*2*Math.PI/K, ca = Math.cos(ang), sa = Math.sin(ang); ctx.beginPath();
+      for (let p=0;p<=N;p++){ const i = p/N, v = waveAt(i), s = specAt(i), r = i*2*Math.PI;
+        let x = AV.scopeX(i,v,s,t,A.bass,A.mid,A.treb,A.level,A.beat,N,r,sc.A,sc.F,sc.P,sc.R,K,sc.X,sc.Y,ar,ay)*sc.X, y = AV.scopeY(i,v,s,t,A.bass,A.mid,A.treb,A.level,A.beat,N,r,sc.A,sc.F,sc.P,sc.R,K,sc.X,sc.Y,ar,ay)*sc.Y;
+        if (!isFinite(x) || !isFinite(y)) continue;
+        const rx = x*ca - y*sa, ry = x*sa + y*ca, px = cx + rx*m, py = cy + ry*m;
+        if (sc.mode==='dots'){ if (F.color.band) ctx.fillStyle = avsColor(i,1); ctx.fillRect(px, py, sc.width, sc.width); } else { p ? ctx.lineTo(px,py) : ctx.moveTo(px,py); } }
+      if (sc.mode==='line') ctx.stroke(); else if (sc.mode==='fill'){ ctx.closePath(); ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke(); } }
+    ctx.lineWidth = 1; }
+  const os = F.ostar;
+  if (os.on){ const arms = os.arms|0, N = 60; ctx.lineWidth = os.width;
+    for (let k=0;k<arms;k++){ const a0 = k*6.2832/arms + t*os.spin; ctx.strokeStyle = avsColor(k/arms, 1); ctx.beginPath();
+      for (let p=0;p<=N;p++){ const u = p/N, v = (os.src==='spectrum' ? specAt(u)*2-0.3 : waveAt(u))*os.amp*0.35, a = a0 + u*os.twist, L = u*os.length; const x = cx + (Math.cos(a)*L - Math.sin(a)*v)*m, y = cy + (Math.sin(a)*L + Math.cos(a)*v)*m; p ? ctx.lineTo(x,y) : ctx.moveTo(x,y); }
+      ctx.stroke(); } ctx.lineWidth = 1; }
+  const bs = F.bspin;
+  if (bs.on){ const val = srcVal(bs.src); AV.bspinA += (0.02 + val*0.25)*bs.speed*dt; const arms = bs.arms|0, L = m*bs.size*(0.5+val*0.6);
+    for (let k=0;k<arms;k++){ const a = AV.bspinA*(k%2?-1:1) + k*6.2832/arms, a2 = a + 0.5; ctx.fillStyle = ctx.strokeStyle = avsColor(k/arms + 0.1, 0.9); ctx.lineWidth = bs.width;
+      if (bs.style==='triangles'){ ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*L, cy+Math.sin(a)*L); ctx.lineTo(cx+Math.cos(a2)*L*0.6, cy+Math.sin(a2)*L*0.6); ctx.closePath(); ctx.fill(); }
+      else { ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*L, cy+Math.sin(a)*L); ctx.stroke(); } } ctx.lineWidth = 1; }
+  const rs = F.rstars;
+  if (rs.on){ const cnt = rs.count|0, R = m*rs.size*(1 + rs.bounce*A.bass); ctx.lineWidth = 1;
+    for (let k=0;k<cnt;k++){ const a = t*rs.speed*0.6 + k*6.2832/cnt, x = cx + Math.cos(a)*m*rs.spread*ar, y = cy + Math.sin(a)*m*rs.spread; starPath(ctx, x, y, R, rs.points|0, t*rs.spin + k); ctx.strokeStyle = avsColor(k/cnt, 1); ctx.stroke(); } }
+  const rg = F.ring;
+  if (rg.on){ const rad = m*(rg.radius + srcVal(rg.src)*rg.amt), sides = rg.sides|0, segs = sides>=3 ? sides : 90, spin = t*rg.spin; ctx.beginPath();
+    for (let p=0;p<=segs;p++){ const a = p/segs*2*Math.PI + spin, rr = rad*(1 + rg.wobble*0.25*Math.sin(a*rg.wfreq + t*2)); const px = cx + Math.cos(a)*rr, py = cy + Math.sin(a)*rr; p ? ctx.lineTo(px,py) : ctx.moveTo(px,py); }
+    ctx.lineWidth = rg.width + A.bass*rg.width; ctx.strokeStyle = avsColor(0.9, 1); ctx.stroke(); ctx.lineWidth = 1; }
+  const pa = F.part;
+  if (pa.on){ const path = (tt) => { switch (pa.path){ case 'circle': return [Math.cos(tt)*0.7, Math.sin(tt)*0.7]; case 'figure8': return [Math.sin(tt)*0.8, Math.sin(2*tt)*0.4]; case 'bounce': return [Math.sin(tt*1.1)*0.8, Math.abs(Math.sin(tt*2.3))*1.4-0.7]; case 'spiral': { const q = (tt/6)%1; return [Math.cos(tt*2)*(0.2+0.6*q), Math.sin(tt*2)*(0.2+0.6*q)]; } default: return [Math.sin(tt*1.3)*0.7 + Math.sin(tt*0.37)*0.2, Math.cos(tt*0.9)*0.6]; } };
+    for (let k=0;k<pa.count;k++){ const tt = t*pa.speed + k/pa.count*2*Math.PI;
+      for (let g=pa.ghosts;g>=0;g--){ const [gx, gy] = path(tt - g*0.12); ctx.beginPath(); ctx.arc(cx + gx*m, cy + gy*m, pa.size + A.bass*pa.bass, 0, 6.2832); ctx.fillStyle = avsColor(0.1 + k*0.3, g ? 0.3 : 1); ctx.fill(); } } }
+  const tx = F.text;
+  if (tx.on && tx.text){ const val = srcVal(tx.src), sz = Math.max(4, m*tx.size); ctx.save(); ctx.translate(cx + tx.x*m, cy + tx.y*m); ctx.scale(1 + val*tx.bounce*0.5, 1 + val*tx.bounce*0.5);
+    ctx.font = (tx.font==='mono' ? '500 ' + sz + 'px "IBM Plex Mono", monospace' : tx.font==='serif' ? 'bold ' + sz + 'px Georgia, serif' : '700 ' + sz + 'px "Chakra Petch", sans-serif'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = avsColor(0.3, 1); if (tx.outline){ ctx.lineWidth = Math.max(1, sz*0.06); ctx.strokeStyle = '#000'; ctx.strokeText(tx.text, 0, 0); } ctx.fillText(tx.text, 0, 0); ctx.restore(); }
+  avsCtx.imageSmoothingEnabled = false; avsCtx.drawImage(AV.cv, 0, 0, avsCv.width, avsCv.height);
+}
+function avsApply(preset, name){
+  for (const k in AVS_DEF) Object.assign(S.avs.fx[k], AVS_DEF[k], preset[k] || {});
+  S.avs.preset = name || ''; save(); compileFormulas(); avsClear(); AV.fount = []; AV.water = {};
+  $('#avsPreset').value = S.avs.preset; refreshFxList('avs'); renderPanel('avs'); if (name) castSend('avs', name);
+}
+function avsStep(d){ const keys = Object.keys(AVS_PRESETS); let i = keys.indexOf(S.avs.preset); i = ((i + d) % keys.length + keys.length) % keys.length; avsApply(AVS_PRESETS[keys[i]], keys[i]); flash('AVS · ' + keys[i]); }
+function avsRandomize(){
+  const pick = a => a[Math.floor(Math.random()*a.length)], rnd = (a,b) => a + Math.random()*(b-a), chance = p => Math.random() < p;
+  const scopeName = pick(Object.keys(SCOPES));
+  const p = { trans:{ fade: pick([3,6,10,16,24]), blur: pick([0,1,1,2]), mirror: pick(['none','none','none','h','v','quad']), invert: chance(0.08), posterize: chance(0.15) ? pick([3,4,6]) : 0 },
+    move:{ on: chance(0.8), zoom:+rnd(-0.14,0.1).toFixed(2), rot:+rnd(-0.06,0.06).toFixed(3), warp: pick(['none','swirl','tunnel','ripple','wave','pinch','bulge']), W:+rnd(0.4,1.6).toFixed(2), Q:pick([6,9,12,18,24]) },
+    dyna:{ on: chance(0.25), grid: pick([16,24,32]) }, water:{ on: chance(0.2) }, mosaic:{ on: chance(0.15) }, glitch:{ on: chance(0.15) },
+    color:{ band: chance(0.35), speed:+rnd(0.2,2).toFixed(2), spread:pick([30,60,120,200]) },
+    scope: Object.assign({ on: chance(0.8), preset:scopeName, mode: pick(['line','line','dots','fill']), K: pick([1,1,1,2,3,4,6]), width: pick([1,1,1.5,2]) }, SCOPES[scopeName], { A:+rnd(0.05,0.5).toFixed(2), F:+rnd(1,8).toFixed(1), P:+rnd(-2,2).toFixed(2) }),
+    ostar:{ on: chance(0.2), arms: pick([3,4,5,6,8]) }, bspin:{ on: chance(0.2) }, rstars:{ on: chance(0.2), count: pick([3,5,8]) }, simple:{ on: chance(0.2), kind: pick(['spectrum','scope']), style: pick(['solid','line','dots']) },
+    fount:{ on: chance(0.2) }, grid:{ on: chance(0.2) }, tscope:{ on: chance(0.1) }, text:{ on: chance(0.1) },
+    plane:{ on: chance(0.15) }, stars:{ on: chance(0.3) }, ring:{ on: chance(0.3), sides: pick([0,0,3,5,6,8]) }, part:{ on: chance(0.25), path: pick(['lissajous','circle','figure8','bounce','spiral']) } };
+  if (!p.scope.on && !p.plane.on && !p.stars.on && !p.ring.on && !p.ostar.on && !p.fount.on && !p.simple.on) p.scope.on = true;
+  avsApply(p, ''); flash('AVS · random');
+}
+
+/* ================= Classic engine ================= */
+const clCv = $('#classic'), clCtx = clCv.getContext('2d');
+const CL = { cv:el('canvas'), ctx:null, W:160, H:64, peaks:new Float32Array(80), hold:new Float32Array(80) };
+CL.ctx = CL.cv.getContext('2d'); CL.cv.width = CL.W; CL.cv.height = CL.H;
+function renderClassic(now, dt){
+  const c = S.classic.fx.main, ctx = CL.ctx, W = CL.W, H = CL.H, hue = c.hue;
+  const col = (h, s, l) => 'hsl(' + ((h+hue)%360) + ',' + s + '%,' + l + '%)';
+  ctx.fillStyle = '#07080c'; ctx.fillRect(0,0,W,H);
+  if (c.grid){ ctx.fillStyle = 'rgba(140,149,170,0.22)'; for (let y=1;y<H;y+=2) for (let x=0;x<W;x+=2) ctx.fillRect(x,y,1,1); }
+  const showA = c.mode!=='scope', showS = c.mode!=='analyzer';
+  if (showA){ const N = c.bands|0, bw = W/N, lo = col(173,70,55), mi = col(44,90,62), hi = col(14,100,62);
+    for (let i=0;i<N;i++){
+      const u = c.scale==='log' ? (i+0.5)/N : Math.log(1 + (i+0.5)/N*349)/Math.log(350);
+      const v = clamp(specAt(u)*c.gain, 0, 1), h = Math.round(v*(H-2)), x = Math.round(i*bw), w = Math.max(1, Math.floor(bw)-c.gap);
+      for (let y=0;y<h;y++){ const f = y/(H-2); ctx.fillStyle = f<0.45 ? lo : f<0.78 ? mi : hi; ctx.fillRect(x, H-1-y, w, 1); }
+      if (c.hold > 0){ if (h >= CL.peaks[i]){ CL.peaks[i] = h; CL.hold[i] = c.hold; } else if (CL.hold[i] > 0) CL.hold[i] -= dt; else CL.peaks[i] = Math.max(0, CL.peaks[i] - c.fall*dt);
+        if (CL.peaks[i] > 0){ ctx.fillStyle = '#e9ecf4'; ctx.fillRect(x, H-1-Math.round(CL.peaks[i]), w, 1); } } } }
+  if (showS){ const mid = H/2, amp = H*0.46*(0.7+A.level*0.6)*c.gain; ctx.fillStyle = c.mode==='both' ? '#ffffff' : col(173,70,60); let py = mid;
+    for (let x=0;x<W;x++){ const v = waveAt(x/W), y = clamp(Math.round(mid - v*amp), 0, H-1);
+      if (c.scope==='dots') ctx.fillRect(x, y, 1, 1);
+      else if (c.scope==='solid'){ const a = Math.min(y, mid), b = Math.max(y, mid); ctx.fillRect(x, a, 1, b-a+1); }
+      else { const a = Math.min(y, py), b = Math.max(y, py); ctx.fillRect(x, a, 1, b-a+1); py = y; } } }
+  clCtx.imageSmoothingEnabled = false; clCtx.fillStyle = '#07080c'; clCtx.fillRect(0,0,clCv.width,clCv.height);
+  const sc = Math.min(clCv.width/W, clCv.height/H), dw = Math.round(W*sc), dh = Math.round(H*sc);
+  clCtx.drawImage(CL.cv, Math.round((clCv.width-dw)/2), Math.round((clCv.height-dh)/2), dw, dh);
+}
+
+/* ================= Reactor engine ================= */
+const rc = $('#reactor'), rctx = rc.getContext('2d'); const fb = el('canvas'), fbctx = fb.getContext('2d');
+let parts = [], bursts = [], hue = 200, ringR = 100;
+function renderReactor(now, dt){
+  const w = rc.width, h = rc.height; if (!w || !h) return;
+  const F = S.reactor.fx, cx = w/2, cy = h/2, base = Math.min(w,h);
+  fbctx.clearRect(0,0,w,h); fbctx.drawImage(rc,0,0);
+  rctx.setTransform(1,0,0,1,0,0); rctx.globalCompositeOperation='source-over'; rctx.globalAlpha = 1;
+  rctx.fillStyle = '#07080c'; rctx.fillRect(0,0,w,h);
+  const fbk = F.feedback, zoom = 1 + srcVal(fbk.zoomSrc)*0.075*fbk.zoom, spin = srcVal(fbk.spinSrc)*0.03*fbk.spin*(fbk.wobble ? Math.sin(now/7000*fbk.wobble) : 1);
+  rctx.translate(cx,cy); rctx.rotate(spin); rctx.scale(zoom,zoom); rctx.translate(-cx,-cy);
+  rctx.globalAlpha = fbk.trail; rctx.drawImage(fb,0,0);
+  rctx.setTransform(1,0,0,1,0,0); rctx.globalAlpha = 1; rctx.globalCompositeOperation = 'lighter';
+  const co = F.color; hue = (hue + co.speed + A.tTreb*co.treb) % 360; const hueOut = (hue + co.hue) % 360;
+  const rg = F.ring; ringR = base*rg.radius*(1 + A.bass*rg.expand);
+  if (wave){ const N = rg.points|0, K = Math.max(1, rg.K|0);
+    for (let k=0;k<K;k++){ const ang = k*2*Math.PI/K; rctx.beginPath();
+      for (let i=0;i<=N;i++){ const amp = waveAt((i%N)/N), r = ringR*(1 + amp*rg.amp*(0.4+A.level)), a = i/N*Math.PI*2 - Math.PI/2 + ang; const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r; i ? rctx.lineTo(x,y) : rctx.moveTo(x,y); }
+      rctx.closePath(); if (rg.glow > 0){ rctx.lineWidth = rg.glow*(0.5+A.bass); rctx.strokeStyle = 'hsla(' + hueOut + ',95%,60%,0.22)'; rctx.stroke(); } rctx.lineWidth = 1.6; rctx.strokeStyle = 'hsla(' + hueOut + ',90%,72%,0.95)'; rctx.stroke(); } }
+  const sp = F.spokes;
+  if (sp.on){ const Kn = sp.count|0; rctx.lineWidth = Math.max(1.5, base*0.004)*sp.width; rctx.lineCap = 'round';
+    for (let i=0;i<Kn;i++){ const u = i/Kn, v = specAt(u); if (v < sp.floor) continue;
+      const a = u*Math.PI*2 - Math.PI/2 + now/9000*sp.speed, r0 = ringR*1.12, r1 = r0 + v*base*sp.length;
+      const col = u<0.33 ? '255,107,61' : u<0.66 ? '246,195,68' : '63,215,199'; rctx.strokeStyle = 'rgba(' + col + ',' + (0.25+v*0.7).toFixed(2) + ')';
+      rctx.beginPath(); rctx.moveTo(cx+Math.cos(a)*r0, cy+Math.sin(a)*r0); rctx.lineTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1); rctx.stroke(); } }
+  const sk = F.sparks, spawn = Math.floor(A.treb*6*sk.rate + (A.beat>0.7 ? sk.beat*sk.rate : 0));
+  for (let i=0;i<spawn && parts.length<600;i++){ const a = Math.random()*Math.PI*2, spd = base*(0.002+Math.random()*0.006)*(1+A.treb*2)*sk.speed; parts.push({ x:cx+Math.cos(a)*ringR, y:cy+Math.sin(a)*ringR, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, l:1, s:(1+Math.random()*2)*sk.size }); }
+  rctx.fillStyle = 'rgba(63,215,199,0.9)';
+  for (let i=parts.length-1;i>=0;i--){ const p = parts[i]; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= sk.drag; p.vy *= sk.drag; p.l -= dt/(60*sk.life); if (p.l<=0){ parts[i] = parts[parts.length-1]; parts.pop(); continue; }
+    rctx.globalAlpha = p.l; rctx.beginPath(); rctx.arc(p.x,p.y,p.s,0,6.283); rctx.fill(); }
+  rctx.globalAlpha = 1;
+  const bu = F.burst;
+  for (let i=bursts.length-1;i>=0;i--){ const b = bursts[i]; b.r += base*0.014*dt*(1+A.bass)*bu.speed; b.a *= Math.pow(bu.decay, dt); if (b.a < 0.02 || b.r > base){ bursts.splice(i,1); continue; }
+    rctx.lineWidth = bu.width; rctx.strokeStyle = 'rgba(255,255,255,' + b.a.toFixed(3) + ')'; rctx.beginPath(); rctx.arc(cx,cy,b.r,0,6.283); rctx.stroke(); }
+  if (co.core > 0){ const g = rctx.createRadialGradient(cx,cy,0,cx,cy,ringR*0.55*co.core); g.addColorStop(0,'rgba(255,107,61,' + (0.25+A.level*0.6).toFixed(2) + ')'); g.addColorStop(1,'rgba(255,107,61,0)'); rctx.fillStyle = g; rctx.beginPath(); rctx.arc(cx,cy,ringR*0.55*co.core,0,6.283); rctx.fill(); }
+  rctx.globalCompositeOperation = 'source-over';
+}
+
+/* ================= control schema → panels ================= */
+const SRC_OPTS = [['level','Level'],['bass','Bass'],['mid','Mid'],['treble','Treble'],['beat','Beat']];
+const ON = { t:'check', k:'on', l:'Enabled', main:true };
+const UI = {
+  avs: { effects: {
+    scope: { label:'Superscope', group:'Render', controls:[ ON,
+      { t:'select', k:'preset', l:'Shape preset', o:Object.keys(SCOPES).map(k=>[k,k]) },
+      { t:'head', text:'Shape math' },
+      { t:'text', k:'fx', l:'x =' }, { t:'text', k:'fy', l:'y =' },
+      { t:'vars', text:'<b>i</b> 0→1 along the curve · <b>v</b> waveform −1..1 · <b>s</b> spectrum 0..1 · <b>r</b> = i·2π · <b>t</b> seconds · <b>b m h l beat</b> bass/mid/treble/level/beat · dials <b>A F P R K X Y</b> · <b>ar ay</b> aspect · sin cos tan abs sqrt pow exp log floor sign atan2 min max clamp mod rand pi · ^ is power' },
+      { t:'range', k:'A', l:'A · amplitude', min:0, max:1.5, step:0.01 },
+      { t:'range', k:'F', l:'F · frequency', min:0, max:24, step:0.1 },
+      { t:'range', k:'P', l:'P · phase speed', min:-6, max:6, step:0.05 },
+      { t:'range', k:'R', l:'R · radius', min:0, max:1.6, step:0.01 },
+      { t:'range', k:'K', l:'K · symmetry copies', min:1, max:12, step:1 },
+      { t:'range', k:'n', l:'Points', min:24, max:1200, step:8 },
+      { t:'range', k:'X', l:'X scale', min:0.1, max:2.5, step:0.05 },
+      { t:'range', k:'Y', l:'Y scale', min:0.1, max:2.5, step:0.05 },
+      { t:'range', k:'rotate', l:'Rotate', min:0, max:360, step:1, fmt:v=>v+'°' },
+      { t:'range', k:'width', l:'Line width', min:0.5, max:5, step:0.5 },
+      { t:'select', k:'mode', l:'Draw as', o:[['line','Line'],['dots','Dots'],['fill','Filled shape']] } ] },
+    move: { label:'Movement', group:'Trans', controls:[ ON,
+      { t:'range', k:'zoom', l:'Zoom (− in, + out)', min:-0.25, max:0.25, step:0.005, fmt:v=>v.toFixed(3) },
+      { t:'range', k:'rot', l:'Rotate per frame', min:-0.15, max:0.15, step:0.005, fmt:v=>v.toFixed(3) },
+      { t:'select', k:'warp', l:'Warp', o:[['none','None'],['swirl','Swirl'],['tunnel','Tunnel'],['ripple','Ripple'],['wave','Wave'],['pinch','Pinch'],['bulge','Bulge'],['custom','Custom formula']] },
+      { t:'range', k:'W', l:'W · warp amount', min:0, max:3, step:0.05 },
+      { t:'range', k:'Q', l:'Q · warp frequency', min:1, max:40, step:0.5 },
+      { t:'range', k:'cx', l:'Center X', min:-1, max:1, step:0.02 },
+      { t:'range', k:'cy', l:'Center Y', min:-1, max:1, step:0.02 },
+      { t:'check', k:'wrap', l:'Wrap edges (tile) instead of clamping' },
+      { t:'head', text:'Warp math (set Warp → Custom)' },
+      { t:'text', k:'fd', l:'d =' }, { t:'text', k:'fr', l:'r =' },
+      { t:'vars', text:'Per pixel, computed once: <b>d</b> distance from center (0 center, 1 edge) · <b>r</b> angle · <b>x y</b> position −1..1 · <b>W Q</b> dials. Result = where this pixel samples from last frame. For formulas that move with time or the beat, use Dynamic movement.' } ] },
+    dyna: { label:'Dynamic movement', group:'Trans', controls:[ ON,
+      { t:'head', text:'Warp math, recomputed every frame' },
+      { t:'text', k:'fd', l:'d =' }, { t:'text', k:'fr', l:'r =' },
+      { t:'vars', text:'Same as Movement plus <b>t</b> seconds and <b>b m h l beat</b>, so the warp can breathe with the music. Evaluated on a grid and interpolated, exactly like AVS Dynamic Movement.' },
+      { t:'range', k:'grid', l:'Grid resolution', min:4, max:48, step:2 },
+      { t:'range', k:'W', l:'W · amount', min:0, max:4, step:0.05 },
+      { t:'range', k:'Q', l:'Q · frequency', min:0.5, max:30, step:0.5 },
+      { t:'check', k:'blend', l:'Blend with previous frame (softer)' } ] },
+    water: { label:'Water', group:'Trans', controls:[ ON,
+      { t:'range', k:'damp', l:'Damping', min:0.80, max:0.995, step:0.005, fmt:v=>v.toFixed(3) },
+      { t:'range', k:'strength', l:'Refraction', min:0, max:4, step:0.1 },
+      { t:'range', k:'shade', l:'Highlight', min:0, max:3, step:0.1 },
+      { t:'range', k:'drops', l:'Random drops', min:0, max:3, step:0.1 },
+      { t:'range', k:'radius', l:'Drop radius', min:1, max:16, step:1 },
+      { t:'check', k:'beatDrop', l:'Big drop on every beat' } ] },
+    mosaic: { label:'Mosaic', group:'Trans', controls:[ ON,
+      { t:'range', k:'size', l:'Block size', min:1, max:24, step:1 },
+      { t:'range', k:'beatSize', l:'Extra on beat', min:0, max:40, step:1 },
+      { t:'range', k:'decay', l:'Beat decay', min:0.5, max:0.98, step:0.01, fmt:v=>v.toFixed(2) } ] },
+    glitch: { label:'Glitch', group:'Trans', controls:[ ON,
+      { t:'range', k:'shift', l:'RGB shift', min:0, max:20, step:1 },
+      { t:'range', k:'scatter', l:'Scatter', min:0, max:12, step:1 },
+      { t:'range', k:'beatShift', l:'RGB shift on beat', min:0, max:30, step:1 },
+      { t:'range', k:'beatScatter', l:'Scatter on beat', min:0, max:16, step:1 },
+      { t:'range', k:'decay', l:'Beat decay', min:0.5, max:0.98, step:0.01, fmt:v=>v.toFixed(2) } ] },
+    trans: { label:'Fade · Blur · Mirror · Levels', group:'Trans', controls:[
+      { t:'range', k:'fade', l:'Fadeout (− brightens)', min:-16, max:48, step:1 },
+      { t:'select', k:'blur', l:'Blur', o:[[0,'Off'],[1,'Light'],[2,'Heavy']], num:true },
+      { t:'range', k:'passes', l:'Blur passes', min:1, max:4, step:1 },
+      { t:'select', k:'mirror', l:'Mirror', o:[['none','None'],['h','Left → right'],['v','Top → bottom'],['quad','Quad']] },
+      { t:'range', k:'bright', l:'Brightness', min:-80, max:80, step:2 },
+      { t:'range', k:'contrast', l:'Contrast', min:-100, max:100, step:5 },
+      { t:'range', k:'posterize', l:'Posterize levels (0 off)', min:0, max:12, step:1 },
+      { t:'range', k:'grain', l:'Grain', min:0, max:60, step:2 },
+      { t:'check', k:'invert', l:'Invert colors' } ] },
+    color: { label:'Color', group:'Global', controls:[
+      { t:'check', k:'band', l:'Band colors (bass coral, mid amber, treble teal)' },
+      { t:'range', k:'hue', l:'Base hue', min:0, max:360, step:1, fmt:v=>v+'°' },
+      { t:'range', k:'speed', l:'Hue cycle speed', min:0, max:6, step:0.05 },
+      { t:'range', k:'treb', l:'Treble pushes hue', min:0, max:12, step:0.1 },
+      { t:'range', k:'spread', l:'Hue spread along curve', min:0, max:360, step:5, fmt:v=>v+'°' },
+      { t:'range', k:'sat', l:'Saturation', min:0, max:100, step:1, fmt:v=>v+'%' },
+      { t:'range', k:'light', l:'Lightness', min:20, max:95, step:1, fmt:v=>v+'%' } ] },
+    ostar: { label:'Oscilloscope star', group:'Render', controls:[ ON,
+      { t:'range', k:'arms', l:'Arms', min:1, max:16, step:1 },
+      { t:'range', k:'length', l:'Arm length', min:0.1, max:1.5, step:0.05 },
+      { t:'range', k:'amp', l:'Waveform amplitude', min:0, max:3, step:0.05 },
+      { t:'range', k:'twist', l:'Twist', min:-6, max:6, step:0.1 },
+      { t:'range', k:'spin', l:'Spin', min:-3, max:3, step:0.05 },
+      { t:'select', k:'src', l:'Source', o:[['wave','Waveform'],['spectrum','Spectrum']] },
+      { t:'range', k:'width', l:'Line width', min:0.5, max:4, step:0.5 } ] },
+    bspin: { label:'Bass spin', group:'Render', controls:[ ON,
+      { t:'range', k:'arms', l:'Arms', min:1, max:8, step:1 },
+      { t:'range', k:'size', l:'Size', min:0.1, max:1.5, step:0.05 },
+      { t:'select', k:'src', l:'Spins with', o:SRC_OPTS },
+      { t:'range', k:'speed', l:'Speed', min:0, max:4, step:0.1 },
+      { t:'select', k:'style', l:'Style', o:[['triangles','Filled triangles'],['lines','Lines']] },
+      { t:'range', k:'width', l:'Line width', min:0.5, max:4, step:0.5 } ] },
+    rstars: { label:'Rotating stars', group:'Render', controls:[ ON,
+      { t:'range', k:'count', l:'Stars', min:1, max:16, step:1 },
+      { t:'range', k:'points', l:'Points per star', min:3, max:12, step:1 },
+      { t:'range', k:'size', l:'Size', min:0.02, max:0.5, step:0.01 },
+      { t:'range', k:'spread', l:'Orbit radius', min:0, max:1, step:0.02 },
+      { t:'range', k:'speed', l:'Orbit speed', min:-4, max:4, step:0.1 },
+      { t:'range', k:'spin', l:'Self spin', min:-6, max:6, step:0.1 },
+      { t:'range', k:'bounce', l:'Bass grows size', min:0, max:4, step:0.1 } ] },
+    simple: { label:'Spectrum / scope strip', group:'Render', controls:[ ON,
+      { t:'select', k:'kind', l:'Kind', o:[['spectrum','Spectrum analyzer'],['scope','Oscilloscope']] },
+      { t:'select', k:'style', l:'Style', o:[['solid','Solid'],['line','Line'],['dots','Dots']] },
+      { t:'select', k:'pos', l:'Position', o:[['bottom','Bottom'],['center','Center'],['top','Top']] },
+      { t:'range', k:'height', l:'Height', min:0.05, max:1, step:0.05 },
+      { t:'range', k:'bands', l:'Bands', min:8, max:160, step:4 },
+      { t:'range', k:'width', l:'Line width', min:0.5, max:4, step:0.5 },
+      { t:'check', k:'mirror', l:'Mirror (spectrum)' } ] },
+    fount: { label:'Dot fountain', group:'Render', controls:[ ON,
+      { t:'range', k:'rate', l:'Rate', min:0, max:4, step:0.1 },
+      { t:'select', k:'src', l:'Driven by', o:SRC_OPTS },
+      { t:'range', k:'gravity', l:'Gravity', min:0, max:4, step:0.1 },
+      { t:'range', k:'spread', l:'Spread', min:0, max:4, step:0.1 },
+      { t:'range', k:'rotate', l:'Rotation', min:-3, max:3, step:0.1 },
+      { t:'range', k:'life', l:'Lifetime', min:0.2, max:4, step:0.1 },
+      { t:'range', k:'size', l:'Dot size', min:1, max:4, step:1 } ] },
+    grid: { label:'Dot grid', group:'Render', controls:[ ON,
+      { t:'range', k:'spacing', l:'Spacing', min:3, max:48, step:1 },
+      { t:'range', k:'vx', l:'Scroll X', min:-4, max:4, step:0.1 },
+      { t:'range', k:'vy', l:'Scroll Y', min:-4, max:4, step:0.1 },
+      { t:'range', k:'size', l:'Dot size', min:1, max:4, step:1 },
+      { t:'range', k:'pulse', l:'Level pulses brightness', min:0, max:1, step:0.05 } ] },
+    tscope: { label:'Timescope (spectrogram)', group:'Render', controls:[ ON,
+      { t:'range', k:'speed', l:'Columns per frame', min:0.1, max:6, step:0.1 },
+      { t:'range', k:'width', l:'Column width', min:1, max:6, step:1 },
+      { t:'range', k:'bands', l:'Bands', min:8, max:160, step:4 },
+      { t:'range', k:'height', l:'Height', min:0.1, max:1, step:0.05 },
+      { t:'select', k:'dir', l:'Direction', o:[['right','Left → right'],['left','Right → left']] },
+      { t:'vars', text:'Set Fadeout to 0 for a persistent spectrogram, or leave it on for one that fades.' } ] },
+    text: { label:'Text', group:'Render', controls:[ ON,
+      { t:'text', k:'text', l:'Text', free:true },
+      { t:'range', k:'size', l:'Size', min:0.05, max:1, step:0.01 },
+      { t:'select', k:'src', l:'Bounces with', o:SRC_OPTS },
+      { t:'range', k:'bounce', l:'Bounce', min:0, max:4, step:0.1 },
+      { t:'range', k:'x', l:'X position', min:-1.5, max:1.5, step:0.05 },
+      { t:'range', k:'y', l:'Y position', min:-1, max:1, step:0.05 },
+      { t:'select', k:'font', l:'Font', o:[['ui','Chakra Petch'],['mono','Plex Mono'],['serif','Serif']] },
+      { t:'check', k:'outline', l:'Black outline' } ] },
+    plane: { label:'Dot plane', group:'Render', controls:[ ON,
+      { t:'range', k:'rows', l:'Rows (depth)', min:4, max:32, step:1 },
+      { t:'range', k:'cols', l:'Columns (bands)', min:6, max:64, step:1 },
+      { t:'range', k:'speed', l:'Scroll speed', min:0, max:4, step:0.1 },
+      { t:'range', k:'height', l:'Height', min:0, max:3, step:0.1 },
+      { t:'range', k:'persp', l:'Perspective', min:0.2, max:3, step:0.1 },
+      { t:'range', k:'size', l:'Dot size', min:1, max:4, step:1 },
+      { t:'range', k:'ripple', l:'Ripple', min:0, max:2, step:0.1 },
+      { t:'select', k:'dir', l:'Direction', o:[['toward','Toward you'],['away','Away']] } ] },
+    stars: { label:'Starfield', group:'Render', controls:[ ON,
+      { t:'range', k:'count', l:'Stars', min:20, max:600, step:10 },
+      { t:'range', k:'speed', l:'Speed', min:0, max:4, step:0.1 },
+      { t:'range', k:'bass', l:'Bass pushes speed', min:0, max:4, step:0.1 },
+      { t:'range', k:'size', l:'Star size', min:1, max:3, step:1 },
+      { t:'range', k:'spread', l:'Spread', min:0.2, max:2, step:0.1 },
+      { t:'range', k:'twinkle', l:'Treble twinkle', min:0, max:1, step:0.05 } ] },
+    ring: { label:'Ring', group:'Render', controls:[ ON,
+      { t:'range', k:'radius', l:'Base radius', min:0, max:1, step:0.01 },
+      { t:'select', k:'src', l:'Responds to', o:SRC_OPTS },
+      { t:'range', k:'amt', l:'Response amount', min:0, max:1.5, step:0.01 },
+      { t:'range', k:'width', l:'Thickness', min:0.5, max:6, step:0.5 },
+      { t:'range', k:'sides', l:'Sides (0 = circle)', min:0, max:12, step:1 },
+      { t:'range', k:'wobble', l:'Wobble', min:0, max:2, step:0.05 },
+      { t:'range', k:'wfreq', l:'Wobble lobes', min:1, max:24, step:1 },
+      { t:'range', k:'spin', l:'Spin', min:-4, max:4, step:0.1 } ] },
+    part: { label:'Moving particle', group:'Render', controls:[ ON,
+      { t:'select', k:'path', l:'Path', o:[['lissajous','Lissajous'],['circle','Circle'],['figure8','Figure 8'],['bounce','Bounce'],['spiral','Spiral']] },
+      { t:'range', k:'count', l:'Particles', min:1, max:8, step:1 },
+      { t:'range', k:'speed', l:'Speed', min:0, max:4, step:0.1 },
+      { t:'range', k:'size', l:'Size', min:0.5, max:8, step:0.5 },
+      { t:'range', k:'bass', l:'Bass grows size', min:0, max:20, step:0.5 },
+      { t:'range', k:'ghosts', l:'Ghost trail', min:0, max:6, step:1 } ] }
+  } },
+  reactor: { effects: {
+    feedback: { label:'Feedback', controls:[
+      { t:'range', k:'trail', l:'Trail (decay)', min:0.70, max:0.985, step:0.005, fmt:v=>v.toFixed(3) },
+      { t:'range', k:'zoom', l:'Zoom amount', min:0, max:3, step:0.1 },
+      { t:'select', k:'zoomSrc', l:'Zoom follows', o:SRC_OPTS },
+      { t:'range', k:'spin', l:'Spin amount', min:0, max:3, step:0.1 },
+      { t:'select', k:'spinSrc', l:'Spin follows', o:SRC_OPTS },
+      { t:'range', k:'wobble', l:'Spin direction wobble', min:0, max:4, step:0.1, hint:'0 = always one way' } ] },
+    ring: { label:'Waveform ring', controls:[
+      { t:'range', k:'radius', l:'Radius', min:0.05, max:0.45, step:0.01 },
+      { t:'range', k:'expand', l:'Bass expands', min:0, max:1.5, step:0.02 },
+      { t:'range', k:'amp', l:'Waveform amplitude', min:0, max:1.5, step:0.02 },
+      { t:'range', k:'glow', l:'Glow width', min:0, max:24, step:1 },
+      { t:'range', k:'points', l:'Points', min:32, max:720, step:8 },
+      { t:'range', k:'K', l:'Symmetry copies', min:1, max:8, step:1 } ] },
+    spokes: { label:'Spectrum spokes', controls:[ ON,
+      { t:'range', k:'count', l:'Spokes', min:8, max:180, step:4 },
+      { t:'range', k:'length', l:'Length', min:0, max:0.6, step:0.01 },
+      { t:'range', k:'speed', l:'Rotation speed', min:-4, max:4, step:0.1 },
+      { t:'range', k:'width', l:'Width', min:0.5, max:4, step:0.5 },
+      { t:'range', k:'floor', l:'Noise floor', min:0, max:0.3, step:0.01 } ] },
+    sparks: { label:'Sparks', controls:[
+      { t:'range', k:'rate', l:'Rate', min:0, max:3, step:0.1 },
+      { t:'range', k:'speed', l:'Speed', min:0.2, max:4, step:0.1 },
+      { t:'range', k:'drag', l:'Drag', min:0.90, max:1.0, step:0.005, fmt:v=>v.toFixed(3) },
+      { t:'range', k:'life', l:'Lifetime', min:0.2, max:4, step:0.1, fmt:v=>v+' s' },
+      { t:'range', k:'size', l:'Size', min:0.5, max:4, step:0.25 },
+      { t:'range', k:'beat', l:'Burst on beat', min:0, max:60, step:2 } ] },
+    burst: { label:'Shockwave', controls:[ ON,
+      { t:'range', k:'speed', l:'Speed', min:0.2, max:4, step:0.1 },
+      { t:'range', k:'decay', l:'Decay', min:0.80, max:0.98, step:0.005, fmt:v=>v.toFixed(3) },
+      { t:'range', k:'width', l:'Width', min:1, max:12, step:0.5 } ] },
+    color: { label:'Color', controls:[
+      { t:'range', k:'hue', l:'Hue offset', min:0, max:360, step:1, fmt:v=>v+'°' },
+      { t:'range', k:'speed', l:'Hue cycle speed', min:0, max:3, step:0.02 },
+      { t:'range', k:'treb', l:'Treble pushes hue', min:0, max:8, step:0.1 },
+      { t:'range', k:'core', l:'Core glow', min:0, max:3, step:0.1 } ] }
+  } },
+  classic: { effects: {
+    main: { label:'Analyzer + scope', controls:[
+      { t:'select', k:'mode', l:'Mode', o:[['analyzer','Analyzer'],['scope','Scope'],['both','Both']] },
+      { t:'range', k:'bands', l:'Bands', min:8, max:80, step:1 },
+      { t:'select', k:'scale', l:'Frequency scale', o:[['log','Logarithmic (musical)'],['lin','Linear']] },
+      { t:'range', k:'gap', l:'Bar gap', min:0, max:3, step:1 },
+      { t:'range', k:'gain', l:'Gain', min:0.2, max:3, step:0.05 },
+      { t:'range', k:'hold', l:'Peak hold', min:0, max:90, step:3, fmt:v=>v+' f' },
+      { t:'range', k:'fall', l:'Peak falloff', min:0.1, max:3, step:0.1 },
+      { t:'select', k:'scope', l:'Scope style', o:[['line','Line'],['dots','Dots'],['solid','Solid']] },
+      { t:'range', k:'hue', l:'Palette hue shift', min:0, max:360, step:1, fmt:v=>v+'°' },
+      { t:'check', k:'grid', l:'Dot grid background' } ] }
+  } }
+};
+function refreshFxList(eng){
+  const sel = $('#fxsel-'+eng), keep = sel.value; sel.innerHTML = '';
+  const groups = {}; for (const k in UI[eng].effects){ const g = UI[eng].effects[k].group || ''; (groups[g] = groups[g] || []).push(k); }
+  for (const g in groups){ const parent = g ? el('optgroup') : sel; if (g) { parent.label = g; sel.appendChild(parent); }
+    groups[g].forEach(k => { const o = el('option'); o.value = k; const st = S[eng].fx[k]; o.textContent = UI[eng].effects[k].label + ('on' in st ? (st.on ? '  ●' : '  ○') : ''); parent.appendChild(o); }); }
+  sel.value = keep && UI[eng].effects[keep] ? keep : Object.keys(UI[eng].effects)[0];
+}
+function renderPanel(eng){
+  const host = $('#panel-'+eng), fxKey = $('#fxsel-'+eng).value, schema = UI[eng].effects[fxKey], st = S[eng].fx[fxKey];
+  host.innerHTML = ''; const h3 = el('h3'); h3.textContent = schema.label; host.appendChild(h3);
+  schema.controls.forEach(c => {
+    const id = eng + '-' + fxKey + '-' + c.k;
+    if (c.t==='vars'){ const p = el('p','vars'); p.innerHTML = c.text; host.appendChild(p); return; }
+    if (c.t==='head'){ const p = el('div','mathh'); p.textContent = c.text; host.appendChild(p); return; }
+    if (c.t==='check'){ const lab = el('label','chk' + (c.main ? ' on-main' : '')); const inp = el('input'); inp.type = 'checkbox'; inp.id = id; inp.checked = !!st[c.k];
+      inp.addEventListener('change', () => { st[c.k] = inp.checked; changed(eng, fxKey, c.k); }); lab.append(inp, document.createTextNode(' ' + c.l)); host.appendChild(lab); return; }
+    if (c.t==='select'){ const w = el('div','lab-sel'); const sp = el('span'); sp.textContent = c.l; const sel = el('select'); sel.id = id;
+      c.o.forEach(([v,l]) => { const o = el('option'); o.value = v; o.textContent = l; sel.appendChild(o); }); sel.value = String(st[c.k]);
+      sel.addEventListener('change', () => { st[c.k] = c.num ? +sel.value : sel.value; changed(eng, fxKey, c.k); }); w.append(sp, sel); host.appendChild(w); return; }
+    if (c.t==='text'){ const w = el('div','formula'); const lab = el('label'); lab.textContent = c.l; lab.htmlFor = id; const inp = el('input'); inp.type = 'text'; inp.id = id; inp.value = st[c.k]; inp.spellcheck = false; inp.autocomplete = 'off';
+      inp.addEventListener(c.free ? 'input' : 'change', () => { st[c.k] = inp.value; changed(eng, fxKey, c.k); }); const err = el('div','err'); err.id = 'err-' + id; w.append(lab, inp, err); host.appendChild(w); return; }
+    const w = el('div','ctl'); const lab = el('label'); lab.textContent = c.l; lab.htmlFor = id; const out = el('output'); const inp = el('input'); inp.type = 'range'; inp.id = id; inp.min = c.min; inp.max = c.max; inp.step = c.step; inp.value = st[c.k];
+    const f = c.fmt || (v => (Math.round(v*100)/100)); out.textContent = f(+st[c.k]);
+    inp.addEventListener('input', () => { st[c.k] = +inp.value; out.textContent = f(+inp.value); changed(eng, fxKey, c.k); });
+    w.append(lab, out, inp); if (c.hint){ const h = el('span','why'); h.textContent = c.hint; w.appendChild(h); } host.appendChild(w);
+  });
+  if (eng==='avs') compileFormulas(fxKey);
+}
+function changed(eng, fx, k){
+  save();
+  if (k==='on') refreshFxList(eng);
+  if (eng==='avs'){
+    if (S.avs.preset){ S.avs.preset = ''; $('#avsPreset').value = ''; }
+    if (fx==='scope' && k==='preset'){ Object.assign(S.avs.fx.scope, SCOPES[S.avs.fx.scope.preset]); save(); renderPanel('avs'); return; }
+    if (k==='fx' || k==='fy' || k==='fd' || k==='fr') compileFormulas(fx);
+    if (fx==='move') AV.lutKey = '';
+  }
+}
+
+/* ================= stage sizing, engine switch ================= */
+function stageRect(){ const r = $('#stage').getBoundingClientRect(); return { w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) }; }
+function resize(){
+  const r = stageRect();
+  if (vis) { try { vis.setRendererSize(r.w, r.h, { pixelRatio: pixelRatio() }); } catch(e){} }
+  const d = Math.min(window.devicePixelRatio||1, 1.5);
+  rc.width = fb.width = Math.round(r.w*d); rc.height = fb.height = Math.round(r.h*d);
+  avsCv.width = clCv.width = Math.round(r.w*d); avsCv.height = clCv.height = Math.round(r.h*d); avsSize();
+  const sp = $('#spec'); const sr = sp.getBoundingClientRect(); sp.width = Math.round(sr.width*d); sp.height = Math.round(58*d);
+}
+new ResizeObserver(resize).observe($('#stage'));
+window.addEventListener('resize', resize);
+function setEngine(choice){
+  if (!ENGINES.includes(choice)) choice = 'milk';
+  S.engine = choice; save(); castSend('engine', choice);
+  const e = engine = (choice==='milk' && !milkOK) ? 'avs' : choice;
+  ENGINES.forEach(k => { $('#'+k).hidden = k!==e; $('#sec-'+k).hidden = k!==e; const s = k==='milk' ? $('#presetSel') : $('#fxsel-'+k); s.hidden = k!==e; });
+  $('#engineSel').value = e; $('#fxLabel').textContent = e==='milk' ? 'Preset' : e==='reactor' ? 'Component' : 'Effect';
+  if (e==='reactor'){ rctx.setTransform(1,0,0,1,0,0); rctx.globalCompositeOperation='source-over'; rctx.globalAlpha=1; rctx.fillStyle='#07080c'; rctx.fillRect(0,0,rc.width,rc.height); }
+  if (e==='milk') resize();
+  cpLast = '';
+}
+
+/* ================= meters ================= */
+const spec = $('#spec'), sctx = spec.getContext('2d');
+const M = { b:$('#mBass'), m:$('#mMid'), t:$('#mTreb'), l:$('#mLvl'), vb:$('#vBass'), vm:$('#vMid'), vt:$('#vTreb'), vl:$('#vLvl'), led:$('#led'), bpm:$('#bpm') };
+let uiTick = 0, seeking = false;
+function drawMeters(){
+  const tick = (uiTick++ & 7) === 0;
+  if (tick && T.buffer && !live && !hostMode && !seeking){ const p = pos(); $('#tCur').textContent = fmt(p); $('#seek').value = Math.round(p/T.dur*1000); }
+  if (WALL || !$('#secReact').open) return;
+  M.b.style.transform = 'scaleX(' + A.tBass.toFixed(3) + ')'; M.m.style.transform = 'scaleX(' + A.tMid.toFixed(3) + ')';
+  M.t.style.transform = 'scaleX(' + A.tTreb.toFixed(3) + ')'; M.l.style.transform = 'scaleX(' + A.tLevel.toFixed(3) + ')';
+  M.led.classList.toggle('on', A.tBeat > 0.35);
+  if (tick){ M.vb.textContent = Math.round(A.tBass*99); M.vm.textContent = Math.round(A.tMid*99); M.vt.textContent = Math.round(A.tTreb*99); M.vl.textContent = Math.round(A.tLevel*99); M.bpm.innerHTML = (A.bpm ? A.bpm : '—') + ' <b>BPM</b>'; }
+  const w = spec.width, h = spec.height; if (!w) return;
+  sctx.clearRect(0,0,w,h);
+  const K = 64, bw = w/K;
+  for (let i=0;i<K;i++){ const u = i/K, v = specTrue(u); sctx.fillStyle = u<0.313 ? '#ff6b3d' : u<0.668 ? '#f6c344' : '#3fd7c7'; sctx.globalAlpha = 0.35 + v*0.65; const bh = Math.max(1, v*(h-4)); sctx.fillRect(i*bw+0.5, h-bh, Math.max(1,bw-1.5), bh); }
+  sctx.globalAlpha = 1; sctx.fillStyle = 'rgba(233,236,244,0.25)';
+  [0.313, 0.668].forEach(u => sctx.fillRect(Math.round(u*w), 0, 1, h));
+}
+
+/* ================= main loop ================= */
+let last = performance.now();
+function frame(now, external){
+  if (!external) requestAnimationFrame(frame);
+  const dt = clamp((now - last)/16.667, 0.25, 3); last = now;
+  if (document.hidden && !external) return;
+  analyse(now);
+  if (engine==='milk'){ renderMilk(); if (S.autoCycle && !S.beatSwitch && names.length && now - lastSwitch > S.cycle*1000) randPreset(); }
+  else if (engine==='avs') renderAVS(now, dt);
+  else if (engine==='classic') renderClassic(now, dt);
+  else renderReactor(now, dt);
+  colorPulse();
+  drawMeters();
+}
+/* Color pulse: the music swells saturation and brightness of the whole picture, independent of Motion. A compositor-side filter, so it costs nothing per pixel. */
+let cpLvl = 0, cpLast = '';
+function colorPulse(){
+  const p = S.colorPulse, cv = $('#'+engine);
+  if (p <= 0){ if (cpLast){ cpLast = ''; ENGINES.forEach(k => { $('#'+k).style.filter = ''; }); } return; }
+  const target = A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35;
+  cpLvl = target > cpLvl ? cpLvl + (target-cpLvl)*0.5 : cpLvl*0.9 + target*0.1;
+  const sat = (1 + cpLvl*p*0.9).toFixed(2), bri = (1 + cpLvl*p*0.45).toFixed(2), con = (1 + cpLvl*p*0.15).toFixed(2);
+  const f = 'saturate(' + sat + ') brightness(' + bri + ') contrast(' + con + ')';
+  if (f !== cpLast){ cpLast = f; cv.style.filter = f; }
+}
+window.__tick = () => { if (devOn) devPump(); frame(performance.now(), true); };   // hosts without a working requestAnimationFrame drive frames themselves
+
+/* ================= events ================= */
+function bindRange(id, key, out, fmtv, after){
+  const elm = $('#'+id); elm.value = S[key]; const o = out ? $('#'+out) : null; const show = () => { if (o) o.textContent = fmtv(+elm.value); };
+  show(); elm.addEventListener('input', () => { S[key] = +elm.value; show(); save(); if (after) after(); });
+}
+bindRange('sens','sens','oSens', v => v.toFixed(2)+'×');
+bindRange('rel','rel','oRel', v => v.toFixed(2));
+bindRange('thr','thr','oThr', v => v.toFixed(2)+'×');
+bindRange('cycle','cycle','oCycle', v => v+' s');
+bindRange('blend','blend','oBlend', v => v.toFixed(1)+' s');
+bindRange('quality','quality','oQuality', v => ['low','auto','device'][v|0], resize);
+bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.vol/100; });
+/* Motion and Color pulse are stored 0–1, shown 0–100 % */
+{ const m = $('#motion'), c = $('#colorPulse'), om = $('#oMotion'), oc = $('#oColorPulse'), tag = $('#feelTag');
+  const showM = () => { const v = S.motion; om.textContent = Math.round(v*100) + '%'; tag.textContent = v >= 0.99 ? 'full motion' : v <= 0.01 ? 'trance' : v < 0.4 ? 'calm' : 'eased'; };
+  const showC = () => { oc.textContent = Math.round(S.colorPulse*100) + '%'; };
+  m.value = Math.round(S.motion*100); c.value = Math.round(S.colorPulse*100); showM(); showC();
+  m.addEventListener('input', () => { S.motion = clamp(m.value/100, 0, 1); showM(); save(); castSend('motion', S.motion); });
+  c.addEventListener('input', () => { S.colorPulse = clamp(c.value/100, 0, 1); showC(); save(); castSend('color', S.colorPulse); }); }
+const cycleUI = () => { const on = S.autoCycle; $('#cycle').disabled = !on; $('#beatSwitch').disabled = !on; };
+$('#autoCycle').checked = S.autoCycle; $('#autoCycle').addEventListener('change', e => { S.autoCycle = e.target.checked; lastSwitch = performance.now(); cycleUI(); save(); });
+$('#beatSwitch').checked = S.beatSwitch; $('#beatSwitch').addEventListener('change', e => { S.beatSwitch = e.target.checked; save(); });
+cycleUI();
+$('#presetSearch').addEventListener('input', applyFilter);
+$('#presetSel').addEventListener('change', e => loadPreset(names.indexOf(e.target.value)));
+$('#btnPrev').addEventListener('click', () => stepPreset(-1));
+$('#btnNext').addEventListener('click', () => stepPreset(1));
+$('#btnRand').addEventListener('click', randPreset);
+$('#btnExtra').addEventListener('click', loadExtra);
+$('#engineSel').addEventListener('change', e => { ensureCtx(); setEngine(e.target.value); });
+$('#btnExpand').addEventListener('click', () => { const d = $('#dock'); d.classList.toggle('collapsed'); const open = !d.classList.contains('collapsed'); $('#btnExpand').setAttribute('aria-expanded', open); $('#btnExpand').textContent = open ? 'Dials ▴' : 'Dials ▾'; resize(); });
+$('#btnHide').addEventListener('click', e => { e.stopPropagation(); document.body.classList.add('ui-hidden'); toast('Tap the picture or press H to bring controls back'); resize(); });
+$('#stage').addEventListener('click', () => {
+  if (WALL) return;
+  if (document.body.classList.contains('ui-hidden')){ document.body.classList.remove('ui-hidden'); resize(); return; }
+  if (engine==='classic'){ const order = ['analyzer','scope','both'], c = S.classic.fx.main; c.mode = order[(order.indexOf(c.mode)+1)%3]; save(); renderPanel('classic'); flash('Classic · ' + c.mode); }
+});
+$('#btnFull').addEventListener('click', e => { e.stopPropagation(); const st = $('#stage'); if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); else if (st.requestFullscreen) st.requestFullscreen().catch(()=>toast('Fullscreen is not available here')); else toast('Fullscreen is not available here'); });
+document.addEventListener('fullscreenchange', resize);
+$('#secReact').addEventListener('toggle', resize);
+{ const sel = $('#avsPreset'); const o0 = el('option'); o0.value = ''; o0.textContent = '— custom —'; sel.appendChild(o0);
+  Object.keys(AVS_PRESETS).forEach(k => { const o = el('option'); o.value = k; o.textContent = k; sel.appendChild(o); }); sel.value = S.avs.preset;
+  sel.addEventListener('change', e => { const k = e.target.value; if (!AVS_PRESETS[k]) return; avsApply(AVS_PRESETS[k], k); flash('AVS · ' + k); }); }
+$('#btnAvsRand').addEventListener('click', avsRandomize);
+$('#btnAvsClear').addEventListener('click', avsClear);
+ENGINES.filter(k => k!=='milk').forEach(k => { refreshFxList(k); $('#fxsel-'+k).addEventListener('change', () => renderPanel(k)); renderPanel(k); });
+compileFormulas();
+$('#seek').addEventListener('pointerdown', () => { seeking = true; });
+$('#seek').addEventListener('input', e => { if (T.buffer) $('#tCur').textContent = fmt(e.target.value/1000*T.dur); });
+$('#seek').addEventListener('change', e => { seeking = false; if (T.buffer) seekTo(e.target.value/1000*T.dur); });
+function startDemo(){ ensureCtx(); actx.resume().catch(()=>{}); renderDemo().then(buf => { loadBuffer(buf, 'Demo loop', '124 BPM · synth house, 8 bars, loops', 'demo'); play(); }).catch(() => toast('Could not render the demo loop')); }
+$('#btnPlay').addEventListener('click', () => { ensureCtx(); if (live){ stopLive(); return; } if (!T.buffer){ startDemo(); return; } T.playing ? pause() : play(); });
+$('#btnDemo').addEventListener('click', () => { if (T.kind==='demo' && T.buffer){ seekTo(0); play(); } else startDemo(); });
+$('#btnMic').addEventListener('click', () => startLive('mic'));
+$('#btnSys').addEventListener('click', () => startLive('sys'));
+$('#fileIn').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  ensureCtx(); actx.resume().catch(()=>{});
+  $('#trackName').textContent = file.name; $('#trackSub').textContent = 'Decoding…';
+  file.arrayBuffer().then(ab => new Promise((res, rej) => { const p = actx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }))
+    .then(buf => loadBuffer(buf, file.name.replace(/\.[^.]+$/,''), fmt(buf.duration) + ' · ' + (file.size/1048576).toFixed(1) + ' MB · loops', 'file'))
+    .catch(() => { $('#trackSub').textContent = 'Could not decode this file'; toast('Could not decode ' + file.name); });
+  e.target.value = '';
+});
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName||'').toLowerCase(); if (tag==='input' || tag==='select' || tag==='textarea' || e.metaKey || e.ctrlKey) return;
+  switch (e.key){
+    case ' ': e.preventDefault(); $('#btnPlay').click(); break;
+    case 'n': case 'N': case 'ArrowRight': stepPreset(1); break;
+    case 'p': case 'P': case 'ArrowLeft': stepPreset(-1); break;
+    case 'r': case 'R': randPreset(); break;
+    case 'e': case 'E': { ensureCtx(); let i = ENGINES.indexOf(engine); for (let k=0;k<ENGINES.length;k++){ i = (i+1)%ENGINES.length; if (ENGINES[i]!=='milk' || milkOK) break; } setEngine(ENGINES[i]); } break;
+    case 'f': case 'F': $('#btnFull').click(); break;
+    case 'h': case 'H': document.body.classList.toggle('ui-hidden'); resize(); break;
+  }
+});
+
+/* ================= boot ================= */
+resize();
+window.__castSync = () => { castSend('engine', S.engine); if (S.engine==='milk' && S.preset) castSend('preset', S.preset); if (S.avs.preset) castSend('avs', S.avs.preset); castSend('motion', S.motion); castSend('color', S.colorPulse); };
+if (android){
+  $('#btnFull').hidden = true;
+  if (typeof android.openWallpaperPicker === 'function'){ $('#sec-android').hidden = false; $('#btnWallpaper').addEventListener('click', () => { try { android.openWallpaperPicker(); } catch(e){} }); }
+  if (typeof android.uiHidden === 'function') new MutationObserver(() => { try { android.uiHidden(document.body.classList.contains('ui-hidden')); } catch(e){} }).observe(document.body, { attributes:true, attributeFilter:['class'] });
+  if (typeof android.ready === 'function') requestAnimationFrame(() => requestAnimationFrame(() => { try { android.ready(); } catch(e){} }));
+}
+try { ensureCtx(); } catch(e){ /* created on first tap instead */ }
+if (WALL){ document.body.classList.add('ui-hidden'); $('#hint').classList.add('gone'); if (S.engine==='milk' && android) S.engine = 'avs'; }
+setEngine(S.engine);
+if (window.matchMedia('(max-width:899px)').matches) $('#dock').classList.add('collapsed'); else $('#dock').classList.remove('collapsed');
+if (WALL && android){ setTimeout(startDevice, 300); }                       // Android live wallpaper: Kotlin drives frames via __tick()
+else if (WALL){ let gotRaf = false; requestAnimationFrame(() => { gotRaf = true; }); setTimeout(() => { if (!gotRaf) setInterval(window.__tick, 33); }, 700); requestAnimationFrame(frame); }
+else requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
