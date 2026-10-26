@@ -148,6 +148,24 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
 .imgthumb{width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid var(--line-2);flex:none}
 .edtag{font-style:normal;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px;font-family:var(--font-data)}
 .panel .note{margin-top:-4px}
+.bandm{display:grid;grid-template-columns:44px 1fr 11px 5ch;gap:7px 9px;align-items:center;font-size:12px}
+.bandm .lab{font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px}
+.hitled{width:11px;height:11px;border-radius:50%;background:#262b3a;transition:box-shadow .05s,background .05s}
+.hitled.on{background:#fff;box-shadow:0 0 10px #fff,0 0 20px var(--accent)}
+.look-save{display:flex;gap:6px}
+.look-save input{flex:1}
+.looks{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:8px;max-height:252px;overflow:auto;overscroll-behavior:contain;padding:1px}
+.looks .note{grid-column:1/-1}
+.look{display:grid;gap:3px;text-align:left;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--radius);padding:5px;color:var(--fg);cursor:pointer;min-width:0;font-family:inherit}
+.look:hover{border-color:var(--accent)}
+.look.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.look .th{display:grid;place-items:center;aspect-ratio:16/9;border-radius:4px;background:#07080c center/cover no-repeat;font-style:normal;font-weight:700;color:var(--dim);font-family:var(--font-data)}
+.look b{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.look span{font-size:10px;color:var(--muted);font-family:var(--font-data);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.look-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.look-cur{flex:1 1 100%;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.look-acts input{flex:1 1 100%}
+.look-acts .btn{flex:1}
 .ctl input:disabled + .why,.lab-sel select:disabled{opacity:.5}
 .tipbox{position:fixed;z-index:60;left:0;top:0;max-width:290px;background:rgba(10,12,18,.97);border:1px solid var(--line-2);border-radius:6px;padding:7px 10px;font-size:12px;line-height:1.45;color:var(--fg);pointer-events:none;opacity:0;transform:translateY(-3px);transition:opacity .12s,transform .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .tipbox.show{opacity:1;transform:none}
@@ -192,6 +210,9 @@ body.ui-hidden.interactive .showbtn{display:grid}
     <div class="hint" id="hint"><span>Press ▶ for the demo loop, or load a track</span></div>
     <div class="stagebtns">
       <div class="icobtn castslot" id="castSlot" hidden aria-hidden="true"></div>
+      <button class="icobtn" id="btnLookQuick" title="Save this look (S)" aria-label="Save this look">
+        <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>
+      </button>
       <button class="icobtn" id="btnHide" title="Hide controls (H)" aria-label="Hide controls">
         <svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A10.6 10.6 0 0 1 12 5c5 0 9 4 10 7-.4 1.2-1.2 2.5-2.3 3.6M6.3 6.3C4.1 7.7 2.6 9.6 2 12c1 3 5 7 10 7 1.6 0 3.1-.4 4.4-1"/></svg>
       </button>
@@ -268,6 +289,56 @@ body.ui-hidden.interactive .showbtn{display:grid}
     </div>
 
     <div class="dock-body">
+      <section id="sec-looks">
+        <h2>Saved looks <small id="looksTag">none yet</small></h2>
+        <div class="look-save">
+          <input type="text" id="lookName" maxlength="40" placeholder="Name this look" aria-label="Look name" autocomplete="off" spellcheck="false">
+          <button class="btn sm" id="btnLookSave">Save</button>
+        </div>
+        <div class="looks" id="looksList" aria-label="Saved looks"></div>
+        <div class="look-acts" id="lookActs" hidden>
+          <span class="look-cur" id="lookSelName"></span>
+          <input type="text" id="lookRenameIn" maxlength="40" aria-label="New name" autocomplete="off" spellcheck="false" hidden>
+          <button class="btn sm" id="btnLookRename">Rename</button>
+          <button class="btn sm" id="btnLookUpdate">Update</button>
+          <button class="btn sm" id="btnLookDel">Delete</button>
+        </div>
+      </section>
+
+      <section id="sec-music">
+        <h2>Music drive <small id="musicTag">balanced</small></h2>
+        <div class="bandm">
+          <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mbB" style="--c:var(--bass)"></i></div><span class="hitled" id="hbB" title="kick"></span><span class="val" id="cbB">—</span>
+          <span class="lab" style="color:var(--mid)">Mid</span><div class="meter"><i id="mbM" style="--c:var(--mid)"></i></div><span class="hitled" id="hbM" title="snare"></span><span class="val" id="cbM">—</span>
+          <span class="lab" style="color:var(--treb)">High</span><div class="meter"><i id="mbH" style="--c:var(--treb)"></i></div><span class="hitled" id="hbH" title="hats"></span><span class="val" id="cbH">—</span>
+        </div>
+        <div class="ctl">
+          <label for="drvB">Bass drive</label><output id="oDrvB">100%</output>
+          <input type="range" id="drvB" min="0" max="300" step="1" value="100">
+          <span class="why">Kick and bass: size, zoom, punch and shockwaves.</span>
+        </div>
+        <div class="ctl">
+          <label for="drvM">Mid drive</label><output id="oDrvM">100%</output>
+          <input type="range" id="drvM" min="0" max="300" step="1" value="100">
+          <span class="why">Vocals, snare and synths: spin, twist and color shifts.</span>
+        </div>
+        <div class="ctl">
+          <label for="drvH">High drive</label><output id="oDrvH">100%</output>
+          <input type="range" id="drvH" min="0" max="300" step="1" value="100">
+          <span class="why">Hats and cymbals: sparkle, flicker and fine detail.</span>
+        </div>
+        <div class="ctl">
+          <label for="drvK">Hits</label><output id="oDrvK">100%</output>
+          <input type="range" id="drvK" min="0" max="300" step="1" value="100">
+          <span class="why">Extra punch on every kick, snare and hat it catches (the lights above).</span>
+        </div>
+        <div class="ctl">
+          <label for="dyn">Dynamics</label><output id="oDyn">70%</output>
+          <input type="range" id="dyn" min="0" max="100" step="1" value="70">
+          <span class="why">How different quiet and loud look. 0 = every song fills the screen, 100% = quiet stays calm, loud explodes.</span>
+        </div>
+      </section>
+
       <section id="sec-feel">
         <h2>Feel <small id="feelTag">full motion</small></h2>
         <div class="ctl">
@@ -430,7 +501,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <div class="bandkey">
             <span><i style="background:var(--bass)"></i>bass 20–250 Hz</span>
             <span><i style="background:var(--mid)"></i>mid –2 kHz</span>
-            <span><i style="background:var(--treb)"></i>treble –12 kHz</span>
+            <span><i style="background:var(--treb)"></i>treble –16 kHz</span>
           </div>
           <div class="meters">
             <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mBass" style="--c:var(--bass)"></i></div><span class="val" id="vBass">0</span>
@@ -455,7 +526,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <div class="ctl">
             <label for="thr">Beat threshold</label><output id="oThr">1.35×</output>
             <input type="range" id="thr" min="1.05" max="2.2" step="0.05" value="1.35">
-            <span class="why">Bass energy vs. its 1-second average. Lower = more beats.</span>
+            <span class="why">How sharply the bass must jump to count as a kick. Lower = more beats.</span>
           </div>
         </div>
       </details>
@@ -482,6 +553,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <kbd>E</kbd><span>next visualizer</span>
           <kbd>F</kbd><span>fullscreen</span>
           <kbd>H</kbd><span>hide / show controls</span>
+          <kbd>S</kbd><span>save the look on screen</span>
           <kbd>Drag</kbd><span>stir Ink, pull the Swarm, draw a Mandala, spin the Laser, look around in 3D Worlds</span>
           <kbd>Wheel</kbd><span>zoom the Laser and 3D Worlds</span>
         </div>
@@ -813,9 +885,9 @@ const MODE_DEF = {
   swarm: { flock:{ count:2400, speed:1, flock:0.4, turbulence:1, orbit:0.6, gravity:0.15 },
            touch:{ hold:'attract', pull:1.5, tapBurst:2, bassBurst:1.2, audioSpeed:1, trebSpark:0.5 },
            look:{ size:2.6, trail:0.82, glow:0.5, pal:'aurora', colorBy:'speed', hueSpeed:8 } },
-  ink:   { fluid:{ fade:0.985, vfade:0.99, curl:22, radius:0.6, force:1.2, quality:'medium' },
+  ink:   { fluid:{ fade:0.993, vfade:0.99, curl:18, radius:0.7, force:1.2, quality:'medium' },
            touch:{ touchInk:1.2, touchForce:1.5, beatSplash:1.5, jets:1, jetRing:0.32, autoSwirl:0.4 },
-           look:{ pal:'nebula', colorMode:'palette', bright:1.4, shade:0.6, bloom:0.35, hueSpeed:10 } },
+           look:{ pal:'rainbow', colorMode:'palette', bright:1.5, shade:0.4, bloom:0.4, hueSpeed:10 } },
   mandala: { brush:{ sym:8, mirror:true, size:3, life:0.7, smooth:0.5 },
            motion:{ rot:0.2, pulse:0.6, auto:0.6, pens:3, wobble:0.6, idle:true },
            look:{ pal:'rainbow', hueSpeed:20, glow:0.6, sat:0.9 } },
@@ -897,7 +969,7 @@ const ECHO_OPTS = [['zoomin','Tunnel (flows outward)'],['zoomout','Pull back (fl
 const ECHO_KEYS = Object.keys(ECHO);
 
 const DEF = { v:4, engine:'hyper', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5, hyq:1,
-  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1 };
+  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7 };
 let S;
 function buildState(j){ let S;
   if (!j || (j.v !== 2 && j.v !== 3 && j.v !== 4)) j = {};
@@ -918,6 +990,7 @@ function buildState(j){ let S;
   const num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; };
   S.motion = num(S.motion, 0, 3, 1); S.colorPulse = num(S.colorPulse, 0, 3, 0.5); S.motionSens = num(S.motionSens, 0.1, 10, 1); S.colorSens = num(S.colorSens, 0.1, 10, 1);
   S.trails = num(S.trails, 0, 1, 0); S.echoHue = num(S.echoHue, 0, 1, 0); S.sens = num(S.sens, 0.1, 6, 1.2); if (!ECHO_KEYS.includes(S.echoMode)) S.echoMode = 'zoomin';
+  S.drvB = num(S.drvB, 0, 3, 1); S.drvM = num(S.drvM, 0, 3, 1); S.drvH = num(S.drvH, 0, 3, 1); S.drvK = num(S.drvK, 0, 3, 1); S.dyn = num(S.dyn, 0, 1, 0.7);
   return S;
 }
 { let j = null; try { const raw = localStorage.getItem('spectral-drift'); if (raw) j = JSON.parse(raw); } catch(e){} S = buildState(j); }
@@ -952,7 +1025,7 @@ function ensureCtx(){
   fft = new Uint8Array(analyser.frequencyBinCount); wave = new Uint8Array(analyser.fftSize);
   binHz = actx.sampleRate / analyser.fftSize;
   $('#fftInfo').textContent = 'FFT 2048 · ' + binHz.toFixed(1) + ' Hz/bin';
-  initMilk();
+  afInit(); initMilk();
   return actx;
 }
 function pos(){ if (!T.buffer) return 0; return T.playing ? ((actx.currentTime - T.startedAt) % T.dur) : T.offset; }
@@ -1113,7 +1186,7 @@ function renderDemo(){
 /* ================= analysis ================= */
 /* A.tBass/tMid/tTreb/tLevel/tBeat are what the music is really doing (meters, color pulse, hue push).
    A.bass/mid/treb/level/beat are what the engines see: the same values pulled toward a steady resting state by the Motion dial. */
-const A = { bass:0, mid:0, treb:0, level:0, beat:0, tBass:0, tMid:0, tTreb:0, tLevel:0, tBeat:0, rawBass:0, bpm:0, lastBeat:0, hist:new Float32Array(43), hi:0, ivals:[] };
+const A = { bass:0, mid:0, treb:0, level:0, beat:0, kick:0, snare:0, hat:0, bright:0, tBass:0, tMid:0, tTreb:0, tLevel:0, tBeat:0, rawBass:0, bpm:0, lastBeat:0, hist:new Float32Array(43), hi:0, ivals:[] };
 const REST = 0.35;                                  // where a band settles when Motion is 0: enough energy to keep presets drifting, no jumps
 let tSec = 0;                                       // seconds, for the slow resting patterns
 const lerp = (a, b, k) => a + (b-a)*k;
@@ -1121,9 +1194,12 @@ const lerp = (a, b, k) => a + (b-a)*k;
    Motion sensitivity is a gain on the music before any of that. */
 function applyMotion(){
   const k = S.motion, g = S.motionSens;
-  const f = t => { const v = Math.min(1.3, t*g); return k <= 1 ? lerp(REST, v, k) : clamp(REST + (v - REST)*k, 0, 1.6); };
-  A.bass = f(A.tBass); A.mid = f(A.tMid); A.treb = f(A.tTreb); A.level = f(A.tLevel);
-  A.beat = clamp(A.tBeat*Math.min(g, 1.5)*k, 0, 1.6);
+  // Music drive: each band's slider scales what the engines see of that band; Hits scales the kick / snare / hat impulses.
+  const f = (t, w) => { const v = Math.min(w > 1 ? 2.2 : 1.3, t*g*w); return k <= 1 ? lerp(REST, v, k) : clamp(REST + (v - REST)*k, 0, 2.2); };
+  A.bass = f(A.tBass, S.drvB); A.mid = f(A.tMid, S.drvM); A.treb = f(A.tTreb, S.drvH); A.level = f(A.tLevel, (S.drvB + S.drvM + S.drvH)/3);
+  const hk = Math.min(k, 1.5)*Math.min(g, 2)*S.drvK;
+  A.kick = Math.min(2.5, AF.hit[0]*S.drvB*hk); A.snare = Math.min(2.5, AF.hit[1]*S.drvM*hk); A.hat = Math.min(2.5, AF.hit[2]*S.drvH*hk);
+  A.beat = clamp(A.tBeat*Math.min(g, 1.5)*k*Math.min(S.drvB, 2)*Math.min(S.drvK, 2), 0, 1.6);
 }
 const specBuf = new Float32Array(75);
 function bandAvg(lo, hi){ let a = Math.max(1, Math.floor(lo/binHz)), b = Math.min(fft.length-1, Math.ceil(hi/binHz)), s = 0; for (let i=a;i<=b;i++) s += fft[i]; return s / ((b-a+1)*255); }
@@ -1141,41 +1217,164 @@ function beatStep(rb, now){
   }
   if (now - A.lastBeat > 2500) A.bpm = 0;
 }
+/* ================= music drive (v10): bass / mid / high as real band loudness, plus drum hits ================= */
+// The analyser's byte spectrum is logarithmic (−100…−30 dB squeezed into 0–255), so music 20 dB quieter still read as ~60 %
+// and a nearly silent track looked almost as busy as a loud one. v10 measures each band as real power from a second,
+// unsmoothed analyser (float dB → linear power) and maps it against that band's own adaptive loudness reference:
+//   L   = 10·log10(mean bin power)                      band level, dB
+//   ref : rises to L in ~60 ms, falls `fall` dB/s        Dynamics: fast fall = auto-level, slow fall = true loudness
+//   x   = ((L − ref + R) / R)^γ                          R = dB of range below the reference, γ widens quiet vs loud
+// then a per-band envelope (bass slow, highs fast). A spectral-flux onset detector per band (the rise in dB summed over the
+// band's bins, z-scored against its own running mean and spread) fires kick / snare / hat hits with a refractory gap.
+const AF = { an:null, td:null, vf:null, vh:null, last:0,
+  L:new Float32Array(3), ref:new Float32Array([-40, -52, -62]), x:new Float32Array(3), env:new Float32Array(3),
+  mu:new Float32Array(3), vr:new Float32Array([0.6, 0.6, 0.6]), hit:new Float32Array(3), str:new Float32Array(3), tHit:new Float64Array(3), on:[false, false, false], count:new Uint32Array(3),
+  lvRef:-30, lvEnv:0, rms:-120, gate:0, bright:0, refD:-40, tmp:new Float32Array(75), F:new Float32Array(3), z:new Float32Array(3) };
+const AF_MINREF = [-68, -84, -98], AF_MINREF_D = -70, AF_MINREF_L = -50;   // a reference never sinks below these: silence and hiss stay dark
+const AF_TA = [0.012, 0.010, 0.006], AF_TR = [2.0, 1.4, 0.9];               // envelope attack (s) and release (× the Release dial) per band
+const AF_TH = [0.17, 0.12, 0.075], AF_GAP = [0.11, 0.09, 0.055];             // hit decay and minimum gap between hits (s)
+const AF_FMIN = [0.9, 0.7, 0.7], AF_Z = [2.1, 2.3, 2.0];                     // hit needs this much dB rise and this many deviations
+function afView(n, freqOf){
+  const V = { n, db:new Float32Array(n), prev:new Float32Array(n).fill(-160), pw:new Float32Array(n), fq:new Float32Array(n), band:new Int8Array(n), flux:new Int8Array(n),
+    d0:new Int32Array(75), d1:new Int32Array(75), tilt:new Float32Array(75) };
+  for (let k=0;k<n;k++){ const f = freqOf(k); V.fq[k] = f;
+    V.band[k] = f < 20 ? -1 : f < 250 ? 0 : f < 2000 ? 1 : f < 16000 ? 2 : -1;
+    V.flux[k] = f >= 35 && f < 160 ? 0 : f >= 250 && f < 2000 ? 1 : f >= 5000 && f < 16000 ? 2 : -1; }
+  // display: 75 log steps from 40 Hz to 14 kHz, each the mean of the bins it covers (the nearest bin when narrower than one);
+  // +4.5 dB/octave tilt so a typical mix reads level across the spectrum instead of sloping down to the treble
+  for (let i=0;i<75;i++){ const f0 = 40*Math.pow(350, i/75), f1 = 40*Math.pow(350, (i+1)/75), fc = Math.sqrt(f0*f1); let a = -1, b = -1;
+    for (let k=1;k<n;k++){ if (V.fq[k] >= f0 && V.fq[k] < f1){ if (a < 0) a = k; b = k; } }
+    if (a < 0){ let best = 1, bd = 1e9; for (let k=1;k<n;k++){ const d = Math.abs(Math.log(V.fq[k]/fc)); if (d < bd){ bd = d; best = k; } } a = b = best; }
+    V.d0[i] = a; V.d1[i] = b; V.tilt[i] = 4.5*Math.log2(fc/1000); }
+  return V;
+}
+function afInit(){
+  if (AF.an || !actx) return;
+  AF.an = actx.createAnalyser(); AF.an.fftSize = 2048; AF.an.smoothingTimeConstant = 0; AF.an.minDecibels = -160; AF.an.maxDecibels = 0;
+  bus.connect(AF.an); AF.td = new Float32Array(2048);
+  const hz = actx.sampleRate/2048; AF.vf = afView(AF.an.frequencyBinCount, k => k*hz);
+}
+function afDt(now){ const dt = AF.last ? clamp((now - AF.last)/1000, 0.004, 0.1) : 1/60; AF.last = now; return dt; }
+function afStep(now){
+  if (!AF.an) afInit(); if (!AF.an) return;
+  const V = AF.vf, dt = afDt(now), db = V.db, pw = V.pw;
+  AF.an.getFloatFrequencyData(db); AF.an.getFloatTimeDomainData(AF.td);
+  for (let k=0;k<V.n;k++){ let d = db[k]; if (!(d > -160)) d = -160; db[k] = d; pw[k] = Math.pow(10, d*0.1); }
+  const td = AF.td; let s = 0; for (let i=0;i<td.length;i+=2) s += td[i]*td[i];
+  afCore(V, dt, now, 10*Math.log10(s/(td.length/2) + 1e-14));
+}
+// Lively / Wallpaper Engine / the Cast sender push 64 magnitudes (0–1) on a log axis; read them as roughly 30 Hz – 16 kHz.
+function afHost(now){
+  if (!AF.vh) AF.vh = afView(64, k => 30*Math.pow(16000/30, (k + 0.5)/64));
+  const V = AF.vh, dt = afDt(now), sp = HOST.spec; let s = 0;
+  for (let k=0;k<64;k++){ const m = sp[k] > 1e-5 ? sp[k] : 1e-5, d = 20*Math.log10(m) - 24; V.db[k] = d; V.pw[k] = Math.pow(10, d*0.1); s += V.pw[k]; }
+  afCore(V, dt, now, 10*Math.log10(s/64 + 1e-16) + 6);
+}
+function afCore(V, dt, now, rmsDb){
+  const dyn = S.dyn, R = 42 - 24*dyn, gam = 1 + 0.7*dyn, fall = 8*Math.pow(0.02, dyn), sDb = 20*Math.log10(S.sens/1.2);
+  const kUp = 1 - Math.exp(-dt/0.06), relTau = -0.016667/Math.log(clamp(S.rel, 0.3, 0.985));
+  const n = V.n, db = V.db, prev = V.prev, pw = V.pw, fq = V.fq, band = V.band, fl = V.flux, ref = AF.ref;
+  let p0 = 0, p1 = 0, p2 = 0, c0 = 0, c1 = 0, c2 = 0, f0 = 0, f1 = 0, f2 = 0, g0 = 0, g1 = 0, g2 = 0, cN = 0, cD = 0;
+  for (let k=1;k<n;k++){
+    const d = db[k], p = pw[k], b = band[k];
+    if (b === 0){ p0 += p; c0++; } else if (b === 1){ p1 += p; c1++; } else if (b === 2){ p2 += p; c2++; }
+    const c = fl[k];
+    if (c >= 0){ let up = d - prev[k]; up = (up > 0 && d + sDb > ref[c] - R - 6) ? (up < 18 ? up : 18) : 0;
+      if (c === 0){ f0 += up; g0++; } else if (c === 1){ f1 += up; g1++; } else { f2 += up; g2++; } }
+    const f = fq[k]; if (f > 60 && f < 12000){ cN += f*p; cD += p; }
+    prev[k] = d;
+  }
+  AF.rms = rmsDb;
+  const gate = clamp((rmsDb + sDb + 74)/14, 0, 1); AF.gate = gate;                      // −74 dBFS and below is silence
+  const P = [p0/Math.max(1, c0), p1/Math.max(1, c1), p2/Math.max(1, c2)], FL = [f0/Math.max(1, g0), f1/Math.max(1, g1), f2/Math.max(1, g2)];
+  const zs = (S.thr - 1.35)*2, a = 1 - Math.exp(-dt/0.45), t = now/1000;
+  for (let b=0;b<3;b++){
+    const L = 10*Math.log10(P[b] + 1e-16) + sDb; AF.L[b] = L;
+    let r = ref[b]; r = L > r ? r + (L - r)*kUp : r - fall*dt; ref[b] = r = Math.max(r, AF_MINREF[b]);
+    let x = (L - r + R)/R; x = x < 0 ? 0 : x > 1.15 ? 1.15 : x; x = Math.pow(x, gam)*gate; AF.x[b] = x;
+    const e = AF.env[b]; AF.env[b] = e + (x - e)*(1 - Math.exp(-dt/(x > e ? AF_TA[b] : relTau*AF_TR[b])));
+    // onset: how far this frame's dB rise sits above the band's usual rise
+    const F = FL[b], z = (F - AF.mu[b])/(Math.sqrt(AF.vr[b]) + 0.25); AF.F[b] = F; AF.z[b] = z;
+    AF.mu[b] += (F - AF.mu[b])*a; const dv = F - AF.mu[b]; AF.vr[b] += (dv*dv - AF.vr[b])*a;
+    AF.hit[b] *= Math.exp(-dt/AF_TH[b]); AF.on[b] = false;
+    const zt = AF_Z[b] + zs;
+    if (z > zt && F > AF_FMIN[b] && x > 0.05 && t - AF.tHit[b] > AF_GAP[b]){
+      const s = clamp(0.45 + (z - zt)*0.16, 0.45, 1)*clamp(0.45 + x*0.8, 0.45, 1);
+      if (s > AF.hit[b]) AF.hit[b] = s; AF.str[b] = s; AF.on[b] = true; AF.tHit[b] = t; AF.count[b]++;
+    }
+  }
+  { const L = rmsDb + sDb; let r = AF.lvRef; r = L > r ? r + (L - r)*kUp : r - fall*dt; AF.lvRef = r = Math.max(r, AF_MINREF_L);
+    let x = (L - r + R)/R; x = x < 0 ? 0 : x > 1.15 ? 1.15 : x; x = Math.pow(x, gam)*gate;
+    const e = AF.lvEnv; AF.lvEnv = e + (x - e)*(1 - Math.exp(-dt/(x > e ? 0.01 : relTau*1.6))); }
+  if (cD > 0){ const bt = clamp(Math.log2(cN/cD/300)/Math.log2(20), 0, 1); AF.bright += (bt - AF.bright)*(1 - Math.exp(-dt/0.25)); }
+  // display spectrum: one shared reference over the tilt-compensated bins, same Dynamics
+  const tmp = AF.tmp; let mx = -300;
+  for (let i=0;i<75;i++){ const lo = V.d0[i], hi = V.d1[i]; let s = 0; for (let k=lo;k<=hi;k++) s += pw[k];
+    const Ld = 10*Math.log10(s/(hi - lo + 1) + 1e-16) + V.tilt[i] + sDb; tmp[i] = Ld; if (Ld > mx) mx = Ld; }
+  let rd = AF.refD; rd = mx > rd ? rd + (mx - rd)*kUp : rd - fall*dt; AF.refD = rd = Math.max(rd, AF_MINREF_D);
+  const RD = R + 14, gD = 1 + 0.35*dyn, kDn = 1 - Math.exp(-dt/(relTau*1.12));   // the spectrum gets a little more range and a softer curve than the bands
+  for (let i=0;i<75;i++){ let v = (tmp[i] - rd + RD)/RD; v = v < 0 ? 0 : v > 1.2 ? 1.2 : v; v = Math.pow(v, gD)*gate; specBuf[i] = v > specBuf[i] ? v : specBuf[i] + (v - specBuf[i])*kDn; }
+  A.tBass = AF.env[0]; A.tMid = AF.env[1]; A.tTreb = AF.env[2]; A.tLevel = AF.lvEnv; A.rawBass = AF.x[0]; A.bright = AF.bright;
+  A.tBeat *= Math.exp(-dt/0.11);
+  if (AF.on[0]){ afTempo(now, AF.str[0]); afBeat(now, AF.str[0]); }
+  if (now - TEMPO.lastHit > 2500){ A.bpm = 0; TEMPO.period = 0; TEMPO.anchor = 0; }
+}
+// Tempo: every pair of bass hits in the last 6 s votes for the gap between them (0.3–1.5 s, 10 ms bins, weighted by both
+// strengths), with a soft preference for 120 BPM so double and half time lose. Robust to bass notes between the kicks.
+const TEMPO = { t:[], s:[], period:0, anchor:0, lastHit:0, beatS:0.7, hist:new Float32Array(121) };
+function afTempo(now, s){
+  const T = TEMPO; T.lastHit = now; T.t.push(now); T.s.push(s);
+  while (T.t.length && now - T.t[0] > 6000){ T.t.shift(); T.s.shift(); }
+  const H = T.hist, n = T.t.length; H.fill(0);
+  for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){ const iv = T.t[j] - T.t[i]; if (iv < 295) continue; if (iv > 1505) break; H[Math.round((iv - 300)/10)] += T.s[i]*T.s[j]; }
+  let best = 0, bv = 0;
+  for (let k=1;k<120;k++){ const bpm = 60000/(300 + k*10), lb = Math.log2(bpm/120)/0.55, v = (H[k-1]*0.5 + H[k] + H[k+1]*0.5)*Math.exp(-0.5*lb*lb); if (v > bv){ bv = v; best = k; } }
+  if (best && n >= 5){ let iv = 300 + best*10, sw = 0, sv = 0;
+    // refine: every pair within 18 ms of 1×, 2× or 3× the winning gap votes for gap/multiple (sub-millisecond, beats frame jitter)
+    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){ const d = T.t[j] - T.t[i]; for (let m=1;m<=3;m++){ if (Math.abs(d - m*iv) < 18){ const w = T.s[i]*T.s[j]; sw += w; sv += w*d/m; } } }
+    if (sw > 0) iv = sv/sw;
+    T.period = T.period && Math.abs(iv - T.period) < 40 ? T.period*0.8 + iv*0.2 : iv; A.bpm = Math.round(60000/T.period); }
+}
+// The beat: a bass hit on the tempo grid (or any bass hit until the tempo is known, or one clearly stronger than the beats so far).
+// It lights the beat LED, fires the Reactor shockwave and MilkDrop's beat switch.
+function afBeat(now, s){
+  const T = TEMPO, P = T.period;
+  if (P && T.anchor){ const ph = ((now - T.anchor) % P + P) % P, d = Math.min(ph, P - ph); if (d > P*0.18 && s < T.beatS*1.25) return; }
+  T.anchor = now; T.beatS = T.beatS*0.8 + s*0.2;
+  A.tBeat = Math.max(A.tBeat, 0.6 + s*0.4); A.lastBeat = now;
+  onBeat();
+}
+// How much each part of the spectrum drives the picture: Bass / Mid / High drive, crossfaded around 250 Hz and 2 kHz.
+function bandW(u){ const a = u < 0.28 ? 0 : u > 0.345 ? 1 : (u - 0.28)/0.065, c = u < 0.635 ? 0 : u > 0.7 ? 1 : (u - 0.635)/0.065;
+  return S.drvB*(1 - a) + S.drvM*(a - c) + S.drvH*c; }
+// A hit that fired this frame, scaled by its band's drive, Hits and Motion; 0 otherwise. For one-shot jumps (a hue kick, a splash).
+function bandHit(b){ return AF.on[b] ? AF.str[b]*[S.drvB, S.drvM, S.drvH][b]*S.drvK*Math.min(S.motion, 1.5) : 0; }
+
 function analyse(now){
   tSec = now/1000;
   if (HOST.on && now - HOST.last < 800){ analyseHost(now); applyMotion(); return; } else if (HOST.on){ HOST.on = false; }
   if (!analyser){ applyMotion(); return; }
-  analyser.getByteFrequencyData(fft); analyser.getByteTimeDomainData(wave);
-  const g = S.sens;
-  const rb = clamp(bandAvg(20,250)*1.15*g, 0, 1), rm = clamp(bandAvg(250,2000)*1.7*g, 0, 1), rt = clamp(bandAvg(2000,12000)*2.6*g, 0, 1);
-  let sum = 0; for (let i=0;i<wave.length;i+=4){ const d = (wave[i]-128)/128; sum += d*d; }
-  const rms = clamp(Math.sqrt(sum/(wave.length/4))*2.2*g, 0, 1);
-  A.tBass = smooth(A.tBass, rb); A.tMid = smooth(A.tMid, rm); A.tTreb = smooth(A.tTreb, rt); A.tLevel = smooth(A.tLevel, rms); A.rawBass = rb;
-  for (let i=0;i<75;i++){ const f0 = 40*Math.pow(350, i/75), f1 = 40*Math.pow(350, (i+1)/75); const v = clamp(bandAvg(f0,f1)*bandGain(f0)*g, 0, 1); specBuf[i] = v > specBuf[i] ? v : specBuf[i]*0.82 + v*0.18; }
-  beatStep(rb, now);
+  analyser.getByteTimeDomainData(wave);
+  afStep(now);
   applyMotion();
 }
 function analyseHost(now){
   const g = S.sens, sp = HOST.spec, mean = (a,b) => { let s = 0; for (let i=a;i<b;i++) s += sp[i]; return s/(b-a); };
-  const rb = clamp(mean(0,6)*1.2*g, 0, 1), rm = clamp(mean(6,28)*1.6*g, 0, 1), rt = clamp(mean(28,64)*2.2*g, 0, 1);
-  A.tBass = smooth(A.tBass, rb); A.tMid = smooth(A.tMid, rm); A.tTreb = smooth(A.tTreb, rt); A.rawBass = rb;
-  for (let i=0;i<75;i++){ const v = clamp(sp[Math.floor(i/75*64)]*g, 0, 1); specBuf[i] = v > specBuf[i] ? v : specBuf[i]*0.82 + v*0.18; }
+  afHost(now);
   const W = HOST.wave; W.fill(0); let peak = 0;
   for (let k=0;k<16;k++){ const amp = mean(k*4, k*4+4)*g; if (amp < 0.015) continue; HOST.phase[k] += 0.02*(k+1); const f = 1 + (k+1)*(k+1)*0.45, ph = HOST.phase[k], w = 6.2832*f/2048;
     for (let i=0;i<2048;i++) W[i] += amp*Math.sin(i*w + ph); }
   for (let i=0;i<2048;i++){ const a = W[i]<0?-W[i]:W[i]; if (a > peak) peak = a; }
   const lvl = clamp(mean(0,64)*2.5*g, 0, 1), norm = peak > 0 ? lvl/peak : 0;
   for (let i=0;i<2048;i++) wave[i] = 128 + W[i]*norm*110;
-  A.tLevel = smooth(A.tLevel, lvl);
-  beatStep(rb, now);
 }
 /* Resting shapes for Motion 0: a slow breathing wave and a softly rolling spectrum, so scopes and bars glide instead of going flat. */
 function waveRest(u){ return 0.28*Math.sin(u*12.566 + tSec*0.6)*(0.65 + 0.35*Math.sin(tSec*0.23)); }
 function specRest(u){ return 0.2 + 0.14*(0.5 + 0.5*Math.sin(u*7.5 + tSec*0.5)); }
 function waveAt(u){ const k = S.motion; const v = clamp((wave ? (wave[Math.floor(clamp(u,0,0.9999)*wave.length)]-128)/128 : 0)*S.motionSens, -1.3, 1.3); return k < 1 ? lerp(waveRest(u), v, k) : k > 1 ? clamp(v*k, -1.6, 1.6) : v; }
-function specAt(u){ const k = S.motion; const v = Math.min(1.3, specBuf[Math.floor(clamp(u,0,0.9999)*75)]*S.motionSens); if (k < 1) return lerp(specRest(u), v, k); if (k === 1) return v; const r = specRest(u); return clamp(r + (v - r)*k, 0, 1.6); }
+function specAt(u){ const k = S.motion; const v = Math.min(1.6, specBuf[Math.floor(clamp(u,0,0.9999)*75)]*S.motionSens*bandW(u)); if (k < 1) return lerp(specRest(u), v, k); if (k === 1) return v; const r = specRest(u); return clamp(r + (v - r)*k, 0, 1.6); }
 function specTrue(u){ return specBuf[Math.floor(clamp(u,0,0.9999)*75)]; }
-function srcVal(name){ return name==='bass'?A.bass : name==='mid'?A.mid : name==='treble'?A.treb : name==='beat'?A.beat : A.level; }
+function srcVal(name){ return name==='bass'?A.bass : name==='mid'?A.mid : name==='treble'?A.treb : name==='beat'?A.beat : name==='kick'?A.kick : name==='snare'?A.snare : name==='hats'?A.hat : A.level; }
 
 /* ================= MilkDrop engine (Butterchurn) ================= */
 const milkCv = $('#milk'); let vis = null, milkOK = false;
@@ -1189,8 +1388,42 @@ const CARRIER = [ [2,14,0.05], [4,12,0.07], [12,11,0.11], [24,10,0.13], [40,9,0.
 /* Overdrive and sensitivity for MilkDrop: it reads each band relative to its recent average, so a plain gain changes nothing.
    Instead the window is scaled by (its loudness / the recent loudness)^e: e > 0 exaggerates the dynamics, e < 0 flattens them. */
 let milkRA = 0;
+/* Bass / Mid / High drive for MilkDrop. A preset reads each band against its own recent average, so a fixed EQ changes nothing.
+   Each band of the 1024-sample window is scaled instead by (its energy / its recent energy)^(e/2): e > 0 exaggerates that
+   band's swings (drive above 100 %), e < 0 flattens them (0 % = that band holds still). FFT → per-band gain → inverse FFT. */
+const MQ = { re:new Float32Array(1024), im:new Float32Array(1024), avg:[0, 0, 0], out:new Uint8Array(1024), dir:1 };
+function fft1024(re, im, inv){
+  const n = 1024;
+  for (let i=1, j=0;i<n;i++){ let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j){ let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+  for (let len=2; len<=n; len<<=1){ const ang = (inv ? 2 : -2)*Math.PI/len, wr = Math.cos(ang), wi = Math.sin(ang), h = len >> 1;
+    for (let i=0;i<n;i+=len){ let cr = 1, ci = 0;
+      for (let j=0;j<h;j++){ const a = i + j, b = a + h, xr = re[b]*cr - im[b]*ci, xi = re[b]*ci + im[b]*cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi; const t = cr*wr - ci*wi; ci = cr*wi + ci*wr; cr = t; } } }
+  if (inv) for (let i=0;i<n;i++){ re[i] /= n; im[i] /= n; }
+}
+function milkBands(src){
+  const re = MQ.re, im = MQ.im, hz = (actx ? actx.sampleRate : 48000)/1024, kb = Math.max(2, Math.round(250/hz)), km = Math.round(2000/hz);
+  for (let i=0;i<1024;i++){ re[i] = src[i] - 128; im[i] = 0; }
+  fft1024(re, im, false);
+  const E = [0, 0, 0], w = [S.drvB, S.drvM, S.drvH], G = [1, 1, 1];
+  for (let i=1;i<512;i++) E[i < kb ? 0 : i < km ? 1 : 2] += re[i]*re[i] + im[i]*im[i];
+  for (let b=0;b<3;b++){ MQ.avg[b] = MQ.avg[b] ? MQ.avg[b]*0.985 + E[b]*0.015 : E[b];
+    const e = w[b] >= 1 ? (w[b] - 1)*0.7 : w[b] - 1; G[b] = clamp(Math.pow((E[b] + 1)/(MQ.avg[b] + 1), e/2), 0.1, 6); }
+  for (let i=1;i<512;i++){ const q = i < kb ? G[0] : i < km ? G[1] : G[2]; re[i] *= q; im[i] *= q; re[1024 - i] *= q; im[1024 - i] *= q; }
+  re[512] *= G[2]; im[512] *= G[2];
+  fft1024(re, im, true);
+  const out = MQ.out; for (let i=0;i<1024;i++){ const v = re[i]; out[i] = v < -127 ? 1 : v > 127 ? 255 : (128 + v)|0; }
+  return out;
+}
+function milkDrive(f){
+  if (AF.on[1]) MQ.dir = -MQ.dir;
+  if (A.kick > 0.02) f.zoom += A.kick*0.02;
+  if (A.snare > 0.02) f.rot += A.snare*0.01*MQ.dir;
+  if (A.hat > 0.02){ f.warp *= 1 + A.hat*0.3; f.wave_a = Math.min(1, f.wave_a*(1 + A.hat*0.3)); }
+}
 function milkAudio(){
-  const k = S.motion, g = S.motionSens, src = wave ? wave.subarray(wave.length-1024) : null;
+  const k = S.motion, g = S.motionSens; let src = wave ? wave.subarray(wave.length-1024) : null;
+  if (src && (S.drvB !== 1 || S.drvM !== 1 || S.drvH !== 1)) src = milkBands(src);
   if (k === 1 && g === 1 && src) return src;
   let dg = 1;
   if (src){ let e2 = 0; for (let i=0;i<1024;i+=8){ const d = src[i]-128; e2 += d*d; } const r = Math.sqrt(e2/128) + 0.5; milkRA = milkRA ? milkRA*0.985 + r*0.015 : r;
@@ -1226,7 +1459,8 @@ function initMilk(){
   setEngine(S.engine);
 }
 function milkFail(msg){ $('#engineSel').querySelector('[value=milk]').disabled = true; $('#milkNote').textContent = msg + ' The other three visualizers still run.'; setEngine(S.engine); }
-function addPresets(obj){ let n = 0; for (const k in obj){ if (!presets[k]){ presets[k] = obj[k]; n++; } } names = Object.keys(presets).sort((a,b)=>a.localeCompare(b)); applyFilter(); $('#presetCount').textContent = names.length; return n; }
+const PRESET_SKIP = /piss|chronic|cervix/i;
+function addPresets(obj){ let n = 0; for (const k in obj){ if (!presets[k] && !PRESET_SKIP.test(k)){ presets[k] = obj[k]; n++; } } names = Object.keys(presets).sort((a,b)=>a.localeCompare(b)); applyFilter(); $('#presetCount').textContent = names.length; return n; }
 function applyFilter(){
   const q = $('#presetSearch').value.trim().toLowerCase();
   filtered = q ? names.filter(n => n.toLowerCase().includes(q)) : names.slice();
@@ -1265,7 +1499,7 @@ function loadExtra(){
 }
 function onBeat(){
   if (engine==='milk' && S.beatSwitch && A.rawBass > 0.6 && performance.now() - lastSwitch > Math.max(4000, S.cycle*250)) randPreset();
-  if (engine==='reactor' && S.reactor.fx.burst.on && S.motion > 0.12) bursts.push({ r: ringR, a: Math.min(1, 0.95*S.motion) });
+  if (engine==='reactor' && S.reactor.fx.burst.on && S.motion > 0.12 && S.drvB*S.drvK > 0.05) bursts.push({ r: ringR, a: Math.min(1, (0.7 + 0.3*AF.str[0])*S.motion*Math.min(1.2, S.drvB*S.drvK)) });
 }
 
 /* ================= AVS pixel ops (pure functions on typed arrays) ================= */
@@ -1533,7 +1767,7 @@ function renderClassic(now, dt){
 
 /* ================= Reactor engine ================= */
 const rc = $('#reactor'), rctx = rc.getContext('2d'); const fb = el('canvas'), fbctx = fb.getContext('2d');
-let parts = [], bursts = [], hue = 200, ringR = 100;
+let parts = [], bursts = [], hue = 200, ringR = 100; const RX = { spin:0 };
 function renderReactor(now, dt){
   const w = rc.width, h = rc.height; if (!w || !h) return;
   const F = S.reactor.fx, cx = w/2, cy = h/2, base = Math.min(w,h);
@@ -1544,19 +1778,19 @@ function renderReactor(now, dt){
   rctx.translate(cx,cy); rctx.rotate(spin); rctx.scale(zoom,zoom); rctx.translate(-cx,-cy);
   rctx.globalAlpha = fbk.trail; rctx.drawImage(fb,0,0);
   rctx.setTransform(1,0,0,1,0,0); rctx.globalAlpha = 1; rctx.globalCompositeOperation = 'lighter';
-  const co = F.color; hue = (hue + co.speed + A.tTreb*co.treb) % 360; const hueOut = (hue + co.hue) % 360;
-  const rg = F.ring; ringR = base*rg.radius*(1 + A.bass*rg.expand);
+  const co = F.color; hue = (hue + co.speed + A.treb*co.treb*0.8 + bandHit(1)*38) % 360; const hueOut = (hue + co.hue) % 360;
+  const rg = F.ring; ringR = base*rg.radius*(1 + A.bass*rg.expand + A.kick*0.16);
   if (wave){ const N = rg.points|0, K = Math.max(1, rg.K|0);
     for (let k=0;k<K;k++){ const ang = k*2*Math.PI/K; rctx.beginPath();
       for (let i=0;i<=N;i++){ const amp = waveAt((i%N)/N), r = ringR*(1 + amp*rg.amp*(0.4+A.level)), a = i/N*Math.PI*2 - Math.PI/2 + ang; const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r; i ? rctx.lineTo(x,y) : rctx.moveTo(x,y); }
       rctx.closePath(); if (rg.glow > 0){ rctx.lineWidth = rg.glow*(0.5+A.bass); rctx.strokeStyle = 'hsla(' + hueOut + ',95%,60%,0.22)'; rctx.stroke(); } rctx.lineWidth = 1.6; rctx.strokeStyle = 'hsla(' + hueOut + ',90%,72%,0.95)'; rctx.stroke(); } }
   const sp = F.spokes;
-  if (sp.on){ const Kn = sp.count|0; rctx.lineWidth = Math.max(1.5, base*0.004)*sp.width; rctx.lineCap = 'round';
+  if (sp.on){ const Kn = sp.count|0; RX.spin += dt*0.00185*sp.speed*(1 + A.mid*1.8); rctx.lineWidth = Math.max(1.5, base*0.004)*sp.width*(1 + A.hat*0.5); rctx.lineCap = 'round';
     for (let i=0;i<Kn;i++){ const u = i/Kn, v = specAt(u); if (v < sp.floor) continue;
-      const a = u*Math.PI*2 - Math.PI/2 + now/9000*sp.speed, r0 = ringR*1.12, r1 = r0 + v*base*sp.length;
-      const col = u<0.33 ? '255,107,61' : u<0.66 ? '246,195,68' : '63,215,199'; rctx.strokeStyle = 'rgba(' + col + ',' + (0.25+v*0.7).toFixed(2) + ')';
+      const a = u*Math.PI*2 - Math.PI/2 + RX.spin, r0 = ringR*1.12, r1 = r0 + v*base*sp.length;
+      const col = u<0.33 ? '255,107,61' : u<0.66 ? '246,195,68' : '63,215,199'; rctx.strokeStyle = 'rgba(' + col + ',' + Math.min(1, 0.25 + v*0.7 + A.hat*0.2).toFixed(2) + ')';
       rctx.beginPath(); rctx.moveTo(cx+Math.cos(a)*r0, cy+Math.sin(a)*r0); rctx.lineTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1); rctx.stroke(); } }
-  const sk = F.sparks, spawn = Math.floor(A.treb*6*sk.rate + (A.beat>0.7 ? sk.beat*sk.rate : 0));
+  const sk = F.sparks, spawn = Math.floor(A.treb*6*sk.rate + A.hat*10*sk.rate + (A.beat>0.7 ? sk.beat*sk.rate : 0));
   for (let i=0;i<spawn && parts.length<600;i++){ const a = Math.random()*Math.PI*2, spd = base*(0.002+Math.random()*0.006)*(1+A.treb*2)*sk.speed; parts.push({ x:cx+Math.cos(a)*ringR, y:cy+Math.sin(a)*ringR, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, l:1, s:(1+Math.random()*2)*sk.size }); }
   rctx.fillStyle = 'rgba(63,215,199,0.9)';
   for (let i=parts.length-1;i>=0;i--){ const p = parts[i]; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= sk.drag; p.vy *= sk.drag; p.l -= dt/(60*sk.life); if (p.l<=0){ parts[i] = parts[parts.length-1]; parts.pop(); continue; }
@@ -1565,12 +1799,12 @@ function renderReactor(now, dt){
   const bu = F.burst;
   for (let i=bursts.length-1;i>=0;i--){ const b = bursts[i]; b.r += base*0.014*dt*(1+A.bass)*bu.speed; b.a *= Math.pow(bu.decay, dt); if (b.a < 0.02 || b.r > base){ bursts.splice(i,1); continue; }
     rctx.lineWidth = bu.width; rctx.strokeStyle = 'rgba(255,255,255,' + b.a.toFixed(3) + ')'; rctx.beginPath(); rctx.arc(cx,cy,b.r,0,6.283); rctx.stroke(); }
-  if (co.core > 0){ const g = rctx.createRadialGradient(cx,cy,0,cx,cy,ringR*0.55*co.core); g.addColorStop(0,'rgba(255,107,61,' + (0.25+A.level*0.6).toFixed(2) + ')'); g.addColorStop(1,'rgba(255,107,61,0)'); rctx.fillStyle = g; rctx.beginPath(); rctx.arc(cx,cy,ringR*0.55*co.core,0,6.283); rctx.fill(); }
+  if (co.core > 0){ const cr = ringR*0.55*co.core*(1 + A.kick*0.25), g = rctx.createRadialGradient(cx,cy,0,cx,cy,cr); g.addColorStop(0,'rgba(255,107,61,' + Math.min(0.85, 0.2 + A.level*0.5 + A.kick*0.2).toFixed(2) + ')'); g.addColorStop(1,'rgba(255,107,61,0)'); rctx.fillStyle = g; rctx.beginPath(); rctx.arc(cx,cy,cr,0,6.283); rctx.fill(); }
   rctx.globalCompositeOperation = 'source-over';
 }
 
 /* ================= control schema → panels ================= */
-const SRC_OPTS = [['level','Level'],['bass','Bass'],['mid','Mid'],['treble','Treble'],['beat','Beat']];
+const SRC_OPTS = [['level','Level'],['bass','Bass'],['mid','Mid'],['treble','Treble'],['beat','Beat'],['kick','Kick hits'],['snare','Snare hits'],['hats','Hat hits']];
 const ON = { t:'check', k:'on', l:'Enabled', main:true };
 const UI = {
   avs: { effects: {
@@ -2148,8 +2382,8 @@ function renderHyper(now, dt){
   const gl = HY.gl, key = S.hyper.scene, sc = HY_SCENES[key], v = S.hyper.fx[key], sec = dt/60;
   if (HY.imgVer !== IMG.ver) hyUploadImage();
   const val = k => (v[k] != null ? v[k] : (sc.def[k] != null ? sc.def[k] : HY_BASE[k]));
-  const spd = val('speed') + val('bass')*(A.bass*1.2 + A.beat*0.6);
-  HY.zoom += spd*sec*0.32; HY.flight += spd*sec*0.5; HY.rot += val('spin')*sec*0.35;
+  const spd = val('speed') + val('bass')*(A.bass*1.2 + A.beat*0.4 + A.kick*1.1);
+  HY.zoom += spd*sec*0.32; HY.flight += spd*sec*0.5; HY.rot += (val('spin')*(1 + A.mid*1.5) + A.snare*0.08*(val('spin') < 0 ? -1 : 1))*sec*0.35;
   HY.hue = (HY.hue + val('hueSpeed')*sec) % 360;
   const src = HY.cur, dst = 1 - src, U = HY.uF, P = HY_PALS[val('pal')] || HY_PALS.nebula, t = (now - HY.t0)/1000;
   gl.bindFramebuffer(gl.FRAMEBUFFER, HY.fb[dst]); gl.viewport(0, 0, HY.W, HY.H); gl.useProgram(HY.pF);
@@ -2160,8 +2394,8 @@ function renderHyper(now, dt){
   gl.uniform1f(U.uBass, A.bass); gl.uniform1f(U.uMid, A.mid); gl.uniform1f(U.uTreb, A.treb); gl.uniform1f(U.uLevel, A.level); gl.uniform1f(U.uBeat, A.beat);
   gl.uniform1i(U.uScene, sc.id); gl.uniform1i(U.uFirst, HY.frame < 2 ? 1 : 0);
   gl.uniform1f(U.uTwist, val('twist')); gl.uniform1f(U.uArms, val('arms')); gl.uniform1f(U.uDetail, val('detail')); gl.uniform1f(U.uOct, val('oct'));
-  gl.uniform1f(U.uStars, val('stars')); gl.uniform1f(U.uStreak, clamp(Math.abs(spd)*0.3, 0, 0.9)); gl.uniform1f(U.uCore, val('core'));
-  gl.uniform1f(U.uTrail, key==='liquid' ? val('keep') : val('trail')); gl.uniform1f(U.uFbZoom, val('fbzoom')); gl.uniform1f(U.uFbRot, val('fbrot')); gl.uniform1f(U.uWarp, val('warp'));
+  gl.uniform1f(U.uStars, val('stars')*(1 + A.treb*0.6 + A.hat*0.9)); gl.uniform1f(U.uStreak, clamp(Math.abs(spd)*0.3, 0, 0.9)); gl.uniform1f(U.uCore, val('core'));
+  gl.uniform1f(U.uTrail, key==='liquid' ? val('keep') : val('trail')); gl.uniform1f(U.uFbZoom, val('fbzoom')); gl.uniform1f(U.uFbRot, val('fbrot')); gl.uniform1f(U.uWarp, val('warp')*(1 + A.mid*0.5));
   gl.uniform1f(U.uKal, val('kal')); gl.uniform1f(U.uNest, val('nest')); gl.uniform1f(U.uLevelRot, val('levelRot')*Math.PI/180);
   gl.uniform1f(U.uImgScale, val('imgScale')); gl.uniform1f(U.uInject, val('inject')); gl.uniform1f(U.uDepth, val('depth')); gl.uniform1f(U.uWobble, val('wobble')); gl.uniform1f(U.uImgAsp, HY.imgAsp);
   gl.uniform3fv(U.uPa, P[0]); gl.uniform3fv(U.uPb, P[1]); gl.uniform3fv(U.uPc, P[2]); gl.uniform3fv(U.uPd, P[3]);
@@ -2169,8 +2403,8 @@ function renderHyper(now, dt){
   gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, hyCv.width, hyCv.height); gl.useProgram(HY.pD);
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, HY.tx[dst]);
   const D = HY.uD; gl.uniform1i(D.uTex, 0); gl.uniform2f(D.uRes, hyCv.width, hyCv.height);
-  gl.uniform1f(D.uHue, (val('hue') + HY.hue)*Math.PI/180); gl.uniform1f(D.uSat, val('sat')); gl.uniform1f(D.uBright, val('bright')*(0.92 + 0.16*A.level));
-  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 2*A.beat)); gl.uniform1f(D.uVig, val('vig'));
+  gl.uniform1f(D.uHue, (val('hue') + HY.hue)*Math.PI/180); gl.uniform1f(D.uSat, val('sat')); gl.uniform1f(D.uBright, val('bright')*(0.92 + 0.16*A.level + 0.1*A.kick));
+  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 1.6*A.beat + 2.2*A.hat)); gl.uniform1f(D.uVig, val('vig'));
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   HY.cur = dst; HY.frame++;
 }
@@ -2208,7 +2442,7 @@ function hookMilkRunner(){
   const R = vis && vis.renderer, run = R && R.presetEquationRunner;
   if (!run || run.__sd) return;
   const orig = run.runFrameEquations.bind(run);
-  run.runFrameEquations = function(g){ orig(g); try { applyMilkEdits(this.mdVSFrame); } catch(e){} };
+  run.runFrameEquations = function(g){ orig(g); try { applyMilkEdits(this.mdVSFrame); } catch(e){} try { milkDrive(this.mdVSFrame); } catch(e){} };
   run.__sd = true;
 }
 function milkFilter(){
@@ -2488,9 +2722,10 @@ function renderSwarm(now, dt){
   const F = S.swarm.fx, Fl = F.flock, Tc = F.touch, L = F.look;
   const asp = T.W/T.H, n = Math.min(SW.cap, Math.max(50, Fl.count|0));
   if (Math.abs(asp - SW.asp) > 1e-3){ const k = asp/SW.asp; for (let i=0;i<SW.cap;i++) SW.px[i] *= k; SW.asp = asp; }
-  const spd = Math.max(0.02, Fl.speed*(1 + Tc.audioSpeed*A.level*1.4)), ds = dt*spd;
+  const spd = Math.max(0.02, Fl.speed*(1 + Tc.audioSpeed*(A.level*0.6 + A.mid*0.9))), ds = dt*spd;
   SW.t += dt/60*(0.35 + 0.65*spd);
-  const hit = beatEdge(SW); if (hit && Tc.bassBurst > 0) swWave(0, 0, Tc.bassBurst*hit);
+  const hit = beatEdge(SW); if (hit && Tc.bassBurst > 0) swWave(0, 0, Tc.bassBurst*hit*(1 + A.kick*0.5));
+  { const sn = bandHit(1); if (sn > 0.05 && Tc.bassBurst > 0){ const a = Math.random()*TAU; swWave(Math.cos(a)*0.5*asp, Math.sin(a)*0.5, Tc.bassBurst*0.6*Math.min(1.5, sn)); SW.hue = (SW.hue + 0.04*Math.min(1.5, sn)) % 1; } }
   // the flow: a slowly turning stream function (curl noise), sampled on a coarse grid
   const gx = SW.gx, gy = SW.gy, FX = SW.fx, FY = SW.fy, t = SW.t;
   for (let j=0;j<=gy;j++) for (let i=0;i<=gx;i++){
@@ -2501,12 +2736,12 @@ function renderSwarm(now, dt){
   const C = SW.cell; C.fill(0);
   const cellOf = (x, y) => (clamp(((y + 1)*0.5*gy)|0, 0, gy - 1)*gx + clamp(((x/asp + 1)*0.5*gx)|0, 0, gx - 1))*5;
   for (let i=0;i<n;i++){ const c = cellOf(SW.px[i], SW.py[i]); C[c] += SW.vx[i]; C[c+1] += SW.vy[i]; C[c+2] += SW.px[i]; C[c+3] += SW.py[i]; C[c+4]++; }
-  const turb = Fl.turbulence*0.00011, orb = Fl.orbit*0.00009, grav = Fl.gravity*0.00016, flk = Fl.flock;
+  const turb = Fl.turbulence*0.00011*(1 + A.treb*0.5), orb = Fl.orbit*0.00009*(1 + A.mid*0.7), grav = Fl.gravity*0.00016, flk = Fl.flock;
   const pdown = PTR.down && engine === 'swarm', mx = (PTR.x*2 - 1)*asp, my = 1 - PTR.y*2, pull = Tc.pull*0.000045, mode = Tc.hold;
   const drag = Math.pow(0.968, ds), vmax = 0.035, W = SW.waves;
   for (let k=W.length-1;k>=0;k--){ const w = W[k]; w.r += 0.028*ds*(0.8 + w.s*0.25); w.a *= Math.pow(0.95, ds); if (w.a < 0.04 || w.r > 3.5) W.splice(k, 1); }
   const P = HY_PALS[L.pal] || HY_PALS.nebula; SW.hue = (SW.hue + L.hueSpeed/360*dt/60) % 1;
-  const sparkT = Math.floor(now/90), spark = Tc.trebSpark*A.treb*1.6, lvl = 0.55 + 0.45*A.level, D = SW.data, cb = L.colorBy;
+  const sparkT = Math.floor(now/90), spark = Tc.trebSpark*(A.treb*1.2 + A.hat*1.6), lvl = 0.55 + 0.45*A.level, D = SW.data, cb = L.colorBy;
   for (let i=0;i<n;i++){
     let x = SW.px[i], y = SW.py[i], vx = SW.vx[i], vy = SW.vy[i];
     // flow field (bilinear)
@@ -2539,7 +2774,7 @@ function renderSwarm(now, dt){
   }
   T.begin(L.trail <= 0.001 ? 0 : Math.pow(L.trail, dt));
   gl.useProgram(SW.P.p); gl.bindVertexArray(SW.vao); gl.bindBuffer(gl.ARRAY_BUFFER, SW.buf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, D, 0, n*4);
-  const U = SW.P.u, g = clamp(L.glow, 0, 1), size = L.size*T.d*(1 + g*2.2);
+  const U = SW.P.u, g = clamp(L.glow, 0, 1), size = L.size*T.d*(1 + g*2.2)*(1 + A.hat*0.2 + A.kick*0.12);
   gl.uniform2f(U.uScale, 1/asp, 1); gl.uniform1f(U.uSize, size); gl.uniform1f(U.uGlow, g); gl.uniform1f(U.uCore, 3.2*(1 + g*2.2)*(1 + g*2.2));
   gl.uniform3fv(U.uPa, P[0]); gl.uniform3fv(U.uPb, P[1]); gl.uniform3fv(U.uPc, P[2]); gl.uniform3fv(U.uPd, P[3]);
   gl.drawArrays(gl.POINTS, 0, n); gl.bindVertexArray(null);
@@ -2591,7 +2826,7 @@ void main(){
   vec3 c = texture(uDye, vUv).rgb;
   if (uShade > 0.001){
     float dx = lum(texture(uDye, vR).rgb) - lum(texture(uDye, vL).rgb), dy = lum(texture(uDye, vT).rgb) - lum(texture(uDye, vB).rgb);
-    vec3 n = normalize(vec3(-dx, -dy, 0.06)), Ld = normalize(vec3(-0.45, 0.55, 1.0));
+    vec3 n = normalize(vec3(-dx, -dy, 0.22)), Ld = normalize(vec3(-0.45, 0.55, 1.0));
     float dif = clamp(dot(n, Ld), 0.0, 1.0), sp = pow(clamp(dot(reflect(-Ld, n), vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 28.0);
     c = mix(c, c*(0.4 + 0.8*dif) + sp*min(lum(c)*1.5, 0.6), uShade);
   }
@@ -2681,16 +2916,21 @@ function renderInk(now, dt){
   inkSize();
   const gl = INK.gl, F = S.ink.fx, Fl = F.fluid, Tc = F.touch, Lk = F.look, asp = INK.W/INK.H, dts = Math.min(dt/60, 1/30);
   INK.hue = (INK.hue + Lk.hueSpeed/360*dt/60) % 1;
-  const amt = 0.22, force = Fl.force;
+  const amt = 0.38, force = Fl.force;
   // music: beat splashes, spectrum jets around a ring, a slow stirrer
   const hit = beatEdge(INK);
-  if (hit && Tc.beatSplash > 0){ const a = Math.random()*TAU, x = 0.5 + (Math.random() - 0.5)*0.55, y = 0.5 + (Math.random() - 0.5)*0.55, v = 520*Tc.beatSplash*force*hit, c = inkColor(INK.hue + Math.random()*0.35, Math.random());
+  if (hit && Tc.beatSplash > 0){ const a = Math.random()*TAU, x = 0.5 + (Math.random() - 0.5)*0.55, y = 0.5 + (Math.random() - 0.5)*0.55, v = 520*Tc.beatSplash*force*hit*(1 + A.kick*0.4), c = inkColor(INK.hue + Math.random()*0.35, Math.random());
     inkSplat(x, y, Math.cos(a)*v, Math.sin(a)*v, c.map(q => q*amt*1.6*Tc.beatSplash*hit), 1.6); INK.musicT = now; }
+  { const sn = bandHit(1); if (sn > 0.05 && Tc.beatSplash > 0){ const a = Math.random()*TAU, x = 0.5 + Math.cos(a)*0.3/asp, y = 0.5 + Math.sin(a)*0.3, k = Math.min(1.5, sn), v = 380*Tc.beatSplash*force*k;
+      inkSplat(x, y, -Math.sin(a)*v, Math.cos(a)*v, inkColor(INK.hue + 0.5 + Math.random()*0.15, Math.random()).map(q => q*amt*1.1*Tc.beatSplash*k), 1.0); INK.musicT = now; }
+    const hh = bandHit(2); if (hh > 0.05){ const k = Math.min(1.5, hh);
+      for (let i=0;i<3;i++) inkSplat(0.15 + Math.random()*0.7, 0.15 + Math.random()*0.7, (Math.random() - 0.5)*140*force, (Math.random() - 0.5)*140*force, inkColor(INK.hue + 0.15 + Math.random()*0.2, Math.random()).map(q => q*0.55*k), 0.22);
+      INK.musicT = now; } }
   if (Tc.jets > 0){ const N = 8, rot = now/1000*0.12;
     for (let i=0;i<N;i++){ const u = (i + 0.5)/N, lv = specAt(u); if (lv < 0.12) continue;
       INK.musicT = now; const a = i/N*TAU + rot, cx = 0.5 + Math.cos(a)*Tc.jetRing/asp, cy = 0.5 + Math.sin(a)*Tc.jetRing, v = lv*lv*Tc.jets*force*900;
       inkSplat(cx, cy, (Math.cos(a)*0.9 - Math.sin(a)*0.35)*v, (Math.sin(a)*0.9 + Math.cos(a)*0.35)*v, inkColor(INK.hue + u*0.5, u).map(q => q*lv*0.09*Tc.jets), 0.55); } }
-  if (Tc.autoSwirl > 0){ INK.stir += dts*(0.35 + A.level*0.8); const a = INK.stir, cx = 0.5 + Math.cos(a)*0.26/asp, cy = 0.5 + Math.sin(a*1.3)*0.24, v = Tc.autoSwirl*force*(140 + 260*A.level);
+  if (Tc.autoSwirl > 0){ INK.stir += dts*(0.35 + A.level*0.4 + A.mid*0.7); const a = INK.stir, cx = 0.5 + Math.cos(a)*0.26/asp, cy = 0.5 + Math.sin(a*1.3)*0.24, v = Tc.autoSwirl*force*(140 + 260*A.level);
     inkSplat(cx, cy, -Math.sin(a)*v, Math.cos(a*1.3)*v, inkColor(INK.hue + 0.5 + Math.sin(a*0.21)*0.25, 0.5).map(q => q*0.045*Tc.autoSwirl), 1.1); }
   if (now - (INK.musicT || 0) > 2200 && now - (INK.idle || 0) > 2200 && !PTR.down){ INK.idle = now; const a = Math.random()*TAU, v = 260*force;
     inkSplat(0.25 + Math.random()*0.5, 0.25 + Math.random()*0.5, Math.cos(a)*v, Math.sin(a)*v, inkColor(INK.hue + Math.random()*0.4, Math.random()).map(q => q*0.3), 1.4); }
@@ -2703,7 +2943,7 @@ function renderInk(now, dt){
   inkFlushSplats();
   inkStep(dts, dt);
   const P = INK.P.show; gl.useProgram(P.p); gl.uniform2f(P.u.uTexel, 1/INK.dyeW, 1/INK.dyeH);
-  gl.uniform1f(P.u.uBright, Lk.bright*(0.9 + 0.25*A.level)); gl.uniform1f(P.u.uShade, Lk.shade); gl.uniform1f(P.u.uBloom, Lk.bloom); gl.uniform2f(P.u.uBloomR, 7/INK.dyeW, 7/INK.dyeH);
+  gl.uniform1f(P.u.uBright, Lk.bright*(0.9 + 0.22*A.level + 0.12*A.kick)); gl.uniform1f(P.u.uShade, Lk.shade); gl.uniform1f(P.u.uBloom, Lk.bloom); gl.uniform2f(P.u.uBloomR, 7/INK.dyeW, 7/INK.dyeH);
   glBindTex(gl, 0, INK.dye.r.tex, P.u.uDye); glDraw(gl, P, null, INK.W, INK.H);
 }
 function inkClear(){ if (!INK.ok) return; const gl = INK.gl; [INK.vel, INK.dye, INK.prs].forEach(p => [p.r, p.w].forEach(t => { gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT); })); gl.bindFramebuffer(gl.FRAMEBUFFER, null); }
@@ -2752,12 +2992,12 @@ function mdToPaint(x, y){ const dx = (x - 0.5)*MD.W, dy = (y - 0.5)*MD.H, cs = M
 function renderMandala(now, dt){
   if (!MD.ok) return; mdSize();
   const F = S.mandala.fx, B = F.brush, M = F.motion, L = F.look, g = MD.pctx, sec = dt/60, base = Math.min(MD.W, MD.H);
-  MD.hue = (MD.hue + L.hueSpeed/360*sec) % 1;
+  MD.hue = (MD.hue + L.hueSpeed/360*sec + bandHit(1)*0.05) % 1;
   // fade: applied in steps of at least 10 % so 8-bit rounding can't leave ghosts
   if (B.life < 0.995){ const tau = 0.5 + Math.pow(B.life, 2.2)*40, f = 0.1; MD.fadeAcc += sec;
     const every = -tau*Math.log(1 - f); if (MD.fadeAcc >= every){ MD.fadeAcc %= every; g.globalCompositeOperation = 'source-over'; g.globalAlpha = f; g.fillStyle = '#000'; g.fillRect(0, 0, MD.side, MD.side); g.globalAlpha = 1; } }
-  MD.rot += M.rot*0.35*sec*(1 + A.treb*0.3);
-  const target = 1 + M.pulse*A.bass*0.14 + M.pulse*A.beat*0.05; MD.scale += (target - MD.scale)*0.3;
+  MD.rot += M.rot*0.35*sec*(1 + A.mid*0.7 + A.treb*0.15);
+  const target = 1 + M.pulse*A.bass*0.14 + M.pulse*A.beat*0.03 + M.pulse*A.kick*0.07; MD.scale += (target - MD.scale)*0.3;
   const w = Math.max(0.5, B.size)*Math.min(window.devicePixelRatio || 1, 1.5);
   // your stroke
   if (PTR.down && engine === 'mandala'){
@@ -2777,7 +3017,7 @@ function renderMandala(now, dt){
       p.ph += sec*(0.4 + A.mid*0.8)*M.auto;
       const rr = R*(0.12 + 0.62*(0.5 + 0.5*Math.sin(p.ph*p.a*0.5 + i))*(0.55 + 0.45*A.mid) + 0.05*Math.sin(p.th*7 + now/1000*3)*M.wobble*A.treb*3);
       const ang = p.th + Math.sin(p.ph*1.7)*0.35*M.wobble, x = Math.cos(ang)*rr, y = Math.sin(ang)*rr;
-      if (p.x !== null) mdSegment(p.x, p.y, x, y, mdColor(MD.hue + i/N*0.35), w*(0.5 + A.level*0.9)*M.auto, 0.5 + 0.5*M.auto);
+      if (p.x !== null) mdSegment(p.x, p.y, x, y, mdColor(MD.hue + i/N*0.35), w*(0.5 + A.level*0.7 + A.hat*0.6)*M.auto, 0.5 + 0.5*M.auto);
       p.x = x; p.y = y; }
   }
   const c = MD.ctx, cs = Math.cos(MD.rot)*MD.scale, sn = Math.sin(MD.rot)*MD.scale;
@@ -2828,17 +3068,17 @@ function renderLaser(now, dt){
   const F = S.laser.fx, Fg = F.figure, M = F.motion, Bm = F.beam, sec = dt/60;
   const N = clamp(Fg.points|0, 100, 3000), copies = clamp(Fg.copies|0, 1, 6), shape = Fg.shape, closed = !!LZ_CLOSED[shape];
   LZ.ph += sec*Fg.drift*0.6*(1 + A.mid*0.5);
-  LZ.hue = (LZ.hue + Bm.hueSpeed/360*sec) % 1;
+  LZ.hue = (LZ.hue + Bm.hueSpeed/360*sec + bandHit(1)*0.06) % 1;
   const spin = 1 + M.trebSpin*A.treb*1.5;
   if (!(PTR.down && engine === 'laser')){ LZ.vyaw *= Math.pow(0.95, dt); LZ.vpitch *= Math.pow(0.95, dt); }
   LZ.yaw += (M.spinY*0.45*sec)*spin + LZ.vyaw*dt; LZ.pitch += (M.spinX*0.35*sec)*spin + LZ.vpitch*dt;
-  const W = T.W, H = T.H, base = Math.min(W, H)*0.4, size = base*M.zoom*(1 + M.bassSize*A.bass*0.32 + M.bassSize*A.beat*0.08);
+  const W = T.W, H = T.H, base = Math.min(W, H)*0.4, size = base*M.zoom*(1 + M.bassSize*A.bass*0.32 + M.bassSize*A.beat*0.05 + M.bassSize*A.kick*0.12);
   const cy = Math.cos(LZ.yaw), sy = Math.sin(LZ.yaw), cp = Math.cos(LZ.pitch), sp = Math.sin(LZ.pitch);
   const P = LZ.P, D = LZ.data, Pal = Bm.pal, mode = Bm.colorMode, wob = M.wobble*0.28;
-  const hw = Bm.width*T.d*0.5*(1 + Bm.glow*5);
+  const hw = Bm.width*T.d*0.5*(1 + Bm.glow*5)*(1 + A.hat*0.35);
   let v = 0; const runs = [];
   for (let cpy=0;cpy<copies;cpy++){
-    const lag = cpy*0.09, alpha = (1 - cpy/copies*0.75)*(0.75 + 0.35*A.level), sc = size*(1 - cpy*0.035), ph = LZ.ph - lag;
+    const lag = cpy*0.09, alpha = (1 - cpy/copies*0.75)*(0.72 + 0.3*A.level + 0.3*A.hat), sc = size*(1 - cpy*0.035), ph = LZ.ph - lag;
     const pts = LZ.pts, scr = LZ.scr;
     for (let i=0;i<N;i++){ const s = closed ? i/N : i/(N - 1); lzPoint(shape, s, Fg.a, Fg.b, Fg.c, ph, pts, i*3);
       let x = pts[i*3], y = pts[i*3+1], z = pts[i*3+2];
@@ -3379,10 +3619,10 @@ function renderDeep(now, dt){
   }
   deepSize(false);
   const P = deepProgram(key);
-  const sec = Math.min(dt, 3)/60, bk = val('bass'), spd = val('speed')*(1 + bk*(A.bass*0.7 + A.beat*0.45));
+  const sec = Math.min(dt, 3)/60, bk = val('bass'), spd = val('speed')*(1 + bk*(A.bass*0.7 + A.beat*0.3 + A.kick*0.7));
   D3.t += sec*(0.35 + 0.65*Math.min(val('speed'), 3))*(1 + bk*A.beat*0.3);
   D3.fly += sec*spd*(D3_FLY[key] || 0);
-  D3.hue = (D3.hue + val('hueSpeed')*sec) % 360;
+  D3.hue = (D3.hue + (val('hueSpeed') + A.mid*14)*sec + bandHit(1)*22) % 360;
   for (let i=0;i<64;i++) D3.specBuf[i] = clamp(specAt((i + 0.5)/64)*255, 0, 255) | 0;
   gl.bindTexture(gl.TEXTURE_2D, D3.specTex); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 64, 1, gl.RED, gl.UNSIGNED_BYTE, D3.specBuf);
   const rate = key === 'terrain' ? val('p2') : 24;
@@ -3393,7 +3633,7 @@ function renderDeep(now, dt){
   const orbit = D3_ORBIT[key] != null, held = PTR.down && engine === 'deep';
   if (orbit){
     if (!held){ D3.vyaw *= Math.pow(0.94, dt); D3.vpitch *= Math.pow(0.94, dt); }
-    D3.yaw += val('orbit')*sec*0.5 + D3.vyaw*dt; D3.pitch = clamp(D3.pitch + D3.vpitch*dt, -1.35, 1.35);
+    D3.yaw += val('orbit')*sec*0.5*(1 + A.mid*0.8) + D3.vyaw*dt; D3.pitch = clamp(D3.pitch + D3.vpitch*dt, -1.35, 1.35);
   } else if (!held){ D3.lyaw *= Math.pow(0.975, dt); D3.lpitch *= Math.pow(0.975, dt); }
   if (P){
     const U = P.u, pal = HY_PALS[val('pal')] || HY_PALS.nebula;
@@ -3402,9 +3642,9 @@ function renderDeep(now, dt){
     gl.uniform2f(U.uRes, D3.W, D3.H); gl.uniform1f(U.uTime, D3.t); gl.uniform1f(U.uFly, D3.fly);
     gl.uniform1f(U.uBass, A.bass); gl.uniform1f(U.uMid, A.mid); gl.uniform1f(U.uTreb, A.treb); gl.uniform1f(U.uLevel, A.level); gl.uniform1f(U.uBeat, A.beat);
     gl.uniform1f(U.uHistHead, D3.histRow + D3.histAcc);
-    gl.uniform1f(U.uYaw, orbit ? D3.yaw : D3.lyaw); gl.uniform1f(U.uPitch, orbit ? D3.pitch : D3.lpitch); gl.uniform1f(U.uDist, (D3_ORBIT[key] || 3)*D3.zoom);
+    gl.uniform1f(U.uYaw, orbit ? D3.yaw : D3.lyaw); gl.uniform1f(U.uPitch, orbit ? D3.pitch : D3.lpitch); gl.uniform1f(U.uDist, (D3_ORBIT[key] || 3)*D3.zoom*(1 - Math.min(0.12, A.kick*0.05)));
     gl.uniform1f(U.uP1, val('p1')); gl.uniform1f(U.uP2, val('p2')); gl.uniform1f(U.uP3, val('p3')); gl.uniform1f(U.uBassK, bk);
-    gl.uniform1f(U.uGlow, val('glow')); gl.uniform1f(U.uFog, val('fog')); gl.uniform1f(U.uDetail, val('detail'));
+    gl.uniform1f(U.uGlow, val('glow')*(1 + A.treb*0.4 + A.hat*0.6)); gl.uniform1f(U.uFog, val('fog')); gl.uniform1f(U.uDetail, val('detail'));
     gl.uniform3fv(U.uPa, pal[0]); gl.uniform3fv(U.uPb, pal[1]); gl.uniform3fv(U.uPc, pal[2]); gl.uniform3fv(U.uPd, pal[3]);
     if (U.uBlob){ const n = Math.round(val('p1')), B = D3.blob, t = D3.t;
       for (let i=0;i<10;i++){ const ph = i*2.399; B[i*4] = Math.sin(t*0.71 + ph)*0.95*(0.6 + 0.4*Math.sin(t*0.13 + i)); B[i*4+1] = Math.sin(t*0.93 + ph*1.3)*0.7; B[i*4+2] = Math.cos(t*0.57 + ph*0.7)*0.95;
@@ -3415,8 +3655,8 @@ function renderDeep(now, dt){
   if (!D3.fb) return;
   const Dp = D3.disp, Du = Dp.u; gl.useProgram(Dp.p);
   glBindTex(gl, 0, D3.fb.tex, Du.uTex); gl.uniform2f(Du.uRes, D3.cw, D3.ch);
-  gl.uniform1f(Du.uHue, (val('hue') + D3.hue)*Math.PI/180); gl.uniform1f(Du.uSat, val('sat')); gl.uniform1f(Du.uBright, val('bright')*(0.94 + 0.12*A.level));
-  gl.uniform1f(Du.uContrast, val('contrast')); gl.uniform1f(Du.uChroma, val('chroma')*(1 + 2*A.beat)); gl.uniform1f(Du.uVig, val('vig'));
+  gl.uniform1f(Du.uHue, (val('hue') + D3.hue)*Math.PI/180); gl.uniform1f(Du.uSat, val('sat')); gl.uniform1f(Du.uBright, val('bright')*(0.94 + 0.12*A.level + 0.08*A.kick));
+  gl.uniform1f(Du.uContrast, val('contrast')); gl.uniform1f(Du.uChroma, val('chroma')*(1 + 1.6*A.beat + 2*A.hat)); gl.uniform1f(Du.uVig, val('vig'));
   glDraw(gl, Dp, null, D3.cw, D3.ch);
 }
 MODE_RT.deep = {
@@ -3527,7 +3767,7 @@ const KEY_TIPS = {
   on:'Turns this effect on or off. ● in the Effect list means on.', hue:'Turns every color around the color wheel.', hueSpeed:'How fast the colors cycle by themselves.',
   sat:'Color strength: 0 is grey, higher is more vivid.', bright:'Overall brightness.', contrast:'Contrast.', chroma:'Red/blue fringes toward the edges; beats widen them.',
   vig:'Darkens the corners.', pal:'The color palette.', width:'Line thickness.', size:'Size.', speed:'Speed.', spin:'Spin. Negative turns the other way.',
-  src:'Which part of the music drives it: level, bass, mid, treble or beat.', count:'How many.', bounce:'How much it jumps with the music.', alpha:'Opacity.',
+  src:'Which part of the music drives it: level, bass, mid, treble, the beat, or the kick, snare and hat hits.', count:'How many.', bounce:'How much it jumps with the music.', alpha:'Opacity.',
   x:'Horizontal position.', y:'Vertical position.', mirror:'Mirror image.', cx:'Moves the centre left or right.', cy:'Moves the centre up or down.',
   // AVS
   'avs.scope.preset':'Loads a ready-made shape: sets the formulas and dials.', 'avs.scope.fx':'Formula for each point’s horizontal position. Variables are listed below.', 'avs.scope.fy':'Formula for each point’s vertical position.',
@@ -3593,14 +3833,22 @@ const TIP_IDS = {
   echoMode:'How the echoes move: stream outward like a tunnel, pull inward, spin, swirl, drift, pump with the beat, mirror or kaleidoscope.',
   echoHue:'Shifts the color of every echo, so the trails turn into rainbows.',
   sens:'Gain on every band before smoothing. Affects motion, colors, meters and beat detection. Turn up for quiet sources like a mic.',
-  rel:'How fast levels fall after a hit. Higher = smoother and lazier.', thr:'How much louder than the last second the bass must be to count as a beat. Lower = more beats.',
+  rel:'How fast levels fall after a hit. Higher = smoother and lazier.', thr:'How sharply the bass must jump, compared with its recent average, to count as a kick (the beat). Lower = more beats.',
   presetSearch:'Type to filter the preset list.', btnPrev:'Previous preset (P).', btnNext:'Next preset (N).', btnRand:'Random preset (R).',
   autoCycle:'Switch to a random preset every few seconds.', cycle:'Seconds between automatic switches.', beatSwitch:'Switch on a strong beat instead of on a timer.', blend:'Crossfade time when presets change.',
   btnExtra:'Downloads about 100 more MilkDrop presets.', quality:'MilkDrop render resolution. Lower it if the picture stutters.', btnMilkReset:'Forget your edits for this preset.',
   hyq:'Hyperspace internal resolution. Lower it if the picture stutters.', btnHyPrev:'Previous scene (P).', btnHyNext:'Next scene (N).', btnHyRand:'Random scene (R).', btnHyMutate:'Nudges every dial of this scene at random.', btnHyReset:'Back to this scene’s defaults.',
   d3q:'3D Worlds resolution. Fast renders fewer pixels, Sharp renders all of them. All settings lower the resolution on their own when the graphics card can’t keep up.',
   btnD3Prev:'Previous scene (P).', btnD3Next:'Next scene (N).', btnD3Rand:'Random scene (R).', btnD3Mutate:'Nudges every dial of this scene at random.', btnD3Reset:'Back to this scene’s defaults, camera included.',
-  avsPreset:'Load a complete AVS stack. This sets every effect.', btnAvsRand:'Builds a random stack.', btnAvsClear:'Clears the screen.'
+  avsPreset:'Load a complete AVS stack. This sets every effect.', btnAvsRand:'Builds a random stack.', btnAvsClear:'Clears the screen.',
+  drvB:'How much the bass and kick drum drive the picture: size, zoom, punch and shockwaves. 0 = ignore the bass, 100% = normal, up to 300%.',
+  drvM:'How much the mids (vocals, snare, synths) drive the picture: spin, twist and color shifts. Each snare also kicks the colors.',
+  drvH:'How much the highs (hats, cymbals) drive the picture: sparkle, flicker and fine detail.',
+  drvK:'Extra punch on every hit the analyzer catches: kicks, snares and hats. The lights above flash on each one; the number is hits per second.',
+  dyn:'How different quiet and loud parts look. Low: every song fills the screen (auto-level). High: quiet music stays calm and loud music explodes, following the real loudness.',
+  lookName:'A name for the look you are about to save.', btnLookSave:'Saves what is on screen now: the visualizer, its scene or preset, and every dial.',
+  btnLookQuick:'Saves this look with an automatic name (S). Rename it later under Saved looks.', btnLookUpdate:'Replaces the selected look with what is on screen now.',
+  btnLookRename:'Renames the selected look.', btnLookDel:'Deletes the selected look. Press twice.'
 };
 function ctlTip(eng, fx, c){ return c.tip || c.hint || KEY_TIPS[eng + '.' + fx + '.' + c.k] || KEY_TIPS[eng + '.' + c.k] || KEY_TIPS[c.k] || ''; }
 function fxTip(eng, fx){ const e = UI[eng] && UI[eng].effects && UI[eng].effects[fx]; return (e && e.desc) || (FX_TIPS[eng] && FX_TIPS[eng][fx]) || ''; }
@@ -3711,8 +3959,9 @@ function frame(now, external){
   else if (MODE_RENDER[engine]) MODE_RENDER[engine](now, dt);
   else renderReactor(now, dt);
   postFrame(dt);
+  if (LOOKS.want) LOOKS.want();
   colorPulse();
-  drawMeters();
+  drawMeters(); musicMeters(now);
 }
 /* Color pulse: the music swells saturation and brightness of the whole picture, independent of Motion. A compositor-side filter, so it costs nothing per pixel. */
 let cpLvl = 0, cpLast = '', cpEl = null;
@@ -3769,6 +4018,139 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
   em.value = S.echoMode; em.addEventListener('change', () => { S.echoMode = em.value; PF.frame = 0; save(); });
   BOUND.push(() => { em.value = S.echoMode; showTag(); echoUI(); postToggle(); });
   showTag(); echoUI(); }
+/* Music drive: Bass / Mid / High drive and Hits 0–300 %, Dynamics 0–100 %. Double-click a label to put that dial back. */
+{ const tag = $('#musicTag');
+  const showTag = () => { const w = [S.drvB, S.drvM, S.drvH], mx = Math.max(...w), mn = Math.min(...w), names = ['bass', 'mid', 'high'];
+    let t = mx - mn < 0.05 ? (mx < 0.05 ? 'music off' : mx > 1.05 ? 'all bands up' : mx < 0.95 ? 'all bands down' : 'balanced') : names[w.indexOf(mx)] + ' led';
+    if (S.drvK < 0.05) t += ' · no hits'; else if (S.drvK > 1.5) t += ' · hard hits';
+    t += S.dyn > 0.85 ? ' · true loudness' : S.dyn < 0.2 ? ' · auto-level' : ''; tag.textContent = t; };
+  const pct = v => Math.round(v*100) + '%';
+  const MUSIC = [
+    ['drvB', () => Math.round(S.drvB*100), v => { S.drvB = clamp(v/100, 0, 3); }, () => pct(S.drvB)],
+    ['drvM', () => Math.round(S.drvM*100), v => { S.drvM = clamp(v/100, 0, 3); }, () => pct(S.drvM)],
+    ['drvH', () => Math.round(S.drvH*100), v => { S.drvH = clamp(v/100, 0, 3); }, () => pct(S.drvH)],
+    ['drvK', () => Math.round(S.drvK*100), v => { S.drvK = clamp(v/100, 0, 3); }, () => S.drvK < 0.005 ? 'off' : pct(S.drvK)],
+    ['dyn',  () => Math.round(S.dyn*100),  v => { S.dyn = clamp(v/100, 0, 1); },  () => pct(S.dyn)]
+  ];
+  MUSIC.forEach(([id, get, set, show]) => {
+    const inp = $('#'+id), o = $('#o' + id[0].toUpperCase() + id.slice(1)), sync = () => { inp.value = get(); o.textContent = show(); };
+    sync(); BOUND.push(sync);
+    inp.addEventListener('input', () => { set(+inp.value); o.textContent = show(); showTag(); save(); });
+    inp.closest('.ctl').querySelector('label').addEventListener('dblclick', () => { S[id] = DEF[id]; sync(); showTag(); save(); });
+  });
+  BOUND.push(showTag); showTag(); }
+/* Live band meters in the Music drive section: level bar per band, and a light that flashes on each kick / snare / hat. */
+const MDRV = { b:[$('#mbB'), $('#mbM'), $('#mbH')], l:[$('#hbB'), $('#hbM'), $('#hbH')], c:[$('#cbB'), $('#cbM'), $('#cbH')], sec:$('#sec-music'), n:0, rate:[0, 0, 0], last:[0, 0, 0], t0:0 };
+function musicMeters(now){
+  if (WALL || !MDRV.sec || MDRV.sec.hidden || document.body.classList.contains('ui-hidden')) return;
+  const e = [A.tBass*S.drvB, A.tMid*S.drvM, A.tTreb*S.drvH];
+  for (let b=0;b<3;b++){ MDRV.b[b].style.transform = 'scaleX(' + Math.min(1, e[b]).toFixed(3) + ')'; MDRV.l[b].classList.toggle('on', AF.hit[b]*S.drvK > 0.42 && [S.drvB, S.drvM, S.drvH][b] > 0.02); }
+  if (now - MDRV.t0 > 1000){ const dt = (now - MDRV.t0)/1000; MDRV.t0 = now;
+    for (let b=0;b<3;b++){ const r = MDRV.t0 && MDRV.n ? (AF.count[b] - MDRV.last[b])/dt : 0; MDRV.last[b] = AF.count[b]; MDRV.rate[b] = MDRV.rate[b]*0.5 + r*0.5; MDRV.c[b].textContent = MDRV.rate[b] < 0.05 ? '—' : MDRV.rate[b].toFixed(1) + '/s'; }
+    MDRV.n++; }
+}
+/* ================= saved looks (v10): name the current picture and bring it back later ================= */
+// A look is the whole state (visualizer, scene or preset, every dial, Feel and Music drive) plus a thumbnail, kept in this
+// device's storage. Loading one goes through applyState(), the path a linked phone already uses, then goes out to a linked PC
+// or TV like any other change. Per-device settings (volume, render quality) stay put. Hyperspace image scenes keep a small
+// copy of their picture so they come back as they were.
+const LOOKS = { list:[], sel:'', want:null, KEY:'spectral-drift-looks', MAX:80, del:0, delT:0 };
+function looksLoad(){ try { const j = JSON.parse(localStorage.getItem(LOOKS.KEY) || '[]'); LOOKS.list = Array.isArray(j) ? j.filter(x => x && x.id && x.state && typeof x.state.engine === 'string') : []; } catch(e){ LOOKS.list = []; } }
+function looksStore(){ try { localStorage.setItem(LOOKS.KEY, JSON.stringify(LOOKS.list)); return true; } catch(e){ toast('Storage is full. Delete a few looks and try again.'); return false; } }
+function engName(e){ const o = document.querySelector('#engineSel option[value="' + e + '"]'); return o ? o.textContent.replace(/\s*\(.*\)\s*$/, '') : e; }
+function lookLabel(st){
+  const e = st.engine; let sub = '';
+  if (e === 'milk') sub = st.preset || '';
+  else if (e === 'hyper') sub = (HY_SCENES[st.hyper && st.hyper.scene] || {}).label || '';
+  else if (e === 'deep') sub = (D3_SCENES[st.deep && st.deep.scene] || {}).label || '';
+  else if (e === 'avs') sub = (st.avs && st.avs.preset) || '';
+  return engName(e) + (sub ? ' · ' + sub : '');
+}
+function lookAutoName(){
+  const st = S, base = st.engine === 'milk' ? 'MilkDrop' : st.engine === 'hyper' ? ((HY_SCENES[st.hyper.scene] || {}).label || 'Hyperspace').replace(/^Image · /, '')
+    : st.engine === 'deep' ? ((D3_SCENES[st.deep.scene] || {}).label || '3D Worlds') : engName(st.engine);
+  let n = 1; const taken = new Set(LOOKS.list.map(l => l.name)); while (taken.has(base + ' ' + n)) n++;
+  return base + ' ' + n;
+}
+// Thumbnail: grabbed inside the frame right after the engine draws (WebGL canvases are only readable then).
+function lookThumb(){
+  const cv = PF.on ? PF.cv : document.getElementById(engine);
+  if (!cv || !cv.width || !cv.height || cv.hidden) return '';
+  try { const t = el('canvas'); t.width = 192; t.height = 108; const g = t.getContext('2d'); g.fillStyle = '#07080c'; g.fillRect(0, 0, 192, 108);
+    const k = Math.max(192/cv.width, 108/cv.height), w = cv.width*k, h = cv.height*k; g.drawImage(cv, (192 - w)/2, (108 - h)/2, w, h);
+    return t.toDataURL('image/jpeg', 0.74); } catch(e){ return ''; }
+}
+function looksGrab(cb){ let done = false; const fin = th => { if (done) return; done = true; LOOKS.want = null; cb(th); };
+  LOOKS.want = () => fin(lookThumb()); setTimeout(() => fin(lookThumb()), 1200); }   // fallback: a 2D canvas still reads fine; WebGL may come out dark
+function lookImage(){ if (!IMG.user || !IMG.el) return '';
+  try { const k = Math.min(1, 448/Math.max(IMG.el.width, IMG.el.height)), c = el('canvas'); c.width = Math.max(1, Math.round(IMG.el.width*k)); c.height = Math.max(1, Math.round(IMG.el.height*k));
+    c.getContext('2d').drawImage(IMG.el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.8); } catch(e){ return ''; } }
+function lookSnapshot(){ const st = JSON.parse(stateJSON()); REMOTE_LOCAL.forEach(k => { delete st[k]; });
+  const img = st.engine === 'hyper' && (HY_SCENES[st.hyper.scene] || {}).group === 'Your image' ? lookImage() : '';
+  return { st, img }; }
+function lookSave(name){
+  name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40) || lookAutoName();
+  const { st, img } = lookSnapshot();
+  const L = { id:'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, t:Date.now(), label:lookLabel(st), state:st, img, thumb:'' };
+  looksGrab(th => { L.thumb = th; LOOKS.list.unshift(L); if (LOOKS.list.length > LOOKS.MAX) LOOKS.list.length = LOOKS.MAX;
+    if (!looksStore()){ LOOKS.list.shift(); return; }
+    LOOKS.sel = L.id; looksRender(); flash('Saved · ' + name); });
+  return name;
+}
+function lookUpdate(id){
+  const L = LOOKS.list.find(x => x.id === id); if (!L) return;
+  const { st, img } = lookSnapshot();
+  looksGrab(th => { const old = { state:L.state, img:L.img, thumb:L.thumb, label:L.label, t:L.t };
+    Object.assign(L, { state:st, img, thumb:th || L.thumb, label:lookLabel(st), t:Date.now() });
+    if (!looksStore()){ Object.assign(L, old); return; }
+    looksRender(); flash('Updated · ' + L.name); });
+}
+function lookApply(id){
+  const L = LOOKS.list.find(x => x.id === id); if (!L) return;
+  try { ensureCtx(); } catch(e){}
+  applyState(JSON.parse(JSON.stringify(L.state)));
+  if (L.img) loadImageURL(L.img, true);
+  remoteQueue(); if (L.img) remoteImage();
+  LOOKS.sel = id; looksRender(); flash(L.name);
+}
+function lookDelete(id){ const i = LOOKS.list.findIndex(x => x.id === id); if (i < 0) return; const [L] = LOOKS.list.splice(i, 1);
+  if (!looksStore()){ LOOKS.list.splice(i, 0, L); return; } if (LOOKS.sel === id) LOOKS.sel = ''; looksRender(); flash('Deleted · ' + L.name); }
+function lookRename(id, name){ const L = LOOKS.list.find(x => x.id === id); name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (!L || !name || name === L.name) { looksRender(); return; } const old = L.name; L.name = name; if (!looksStore()) L.name = old; looksRender(); }
+function looksRender(){
+  const box = $('#looksList'); if (!box) return; box.innerHTML = '';
+  $('#looksTag').textContent = LOOKS.list.length ? LOOKS.list.length + ' saved' : 'none yet';
+  if (!LOOKS.list.length){ const p = el('p', 'note'); p.textContent = 'Found a picture you like? Name it and press Save, or press S (the bookmark on the picture does the same). It keeps the visualizer, the scene and every dial.'; box.appendChild(p); }
+  for (const L of LOOKS.list){
+    const b = el('button', 'look' + (L.id === LOOKS.sel ? ' sel' : '')); b.type = 'button'; b.dataset.id = L.id; b.title = L.name + ' · ' + L.label;
+    const th = el('i', 'th'); if (L.thumb) th.style.backgroundImage = 'url(' + L.thumb + ')'; else th.textContent = engName(L.state.engine).slice(0, 1);
+    const nm = el('b'); nm.textContent = L.name; const sub = el('span'); sub.textContent = L.label;
+    b.append(th, nm, sub); box.appendChild(b);
+  }
+  const L = LOOKS.list.find(x => x.id === LOOKS.sel), acts = $('#lookActs');
+  acts.hidden = !L; LOOKS.del = 0; $('#btnLookDel').textContent = 'Delete';
+  if (L){ $('#lookSelName').textContent = L.name; $('#lookRenameIn').hidden = true; $('#lookSelName').hidden = false; $('#btnLookRename').textContent = 'Rename'; }
+}
+function looksInit(){
+  if (WALL) return;
+  looksLoad(); looksRender();
+  const nameIn = $('#lookName');
+  const doSave = () => { lookSave(nameIn.value); nameIn.value = ''; nameIn.blur(); };
+  $('#btnLookSave').addEventListener('click', doSave);
+  nameIn.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); doSave(); } });
+  $('#btnLookQuick').addEventListener('click', () => lookSave(''));
+  $('#looksList').addEventListener('click', e => { const b = e.target.closest('.look'); if (b) lookApply(b.dataset.id); });
+  $('#btnLookUpdate').addEventListener('click', () => { if (LOOKS.sel) lookUpdate(LOOKS.sel); });
+  const rin = $('#lookRenameIn'), rbtn = $('#btnLookRename');
+  const endRename = ok => { if (rin.hidden) return; const v = rin.value; rin.hidden = true; $('#lookSelName').hidden = false; rbtn.textContent = 'Rename'; if (ok) lookRename(LOOKS.sel, v); };
+  rbtn.addEventListener('click', () => { const L = LOOKS.list.find(x => x.id === LOOKS.sel); if (!L) return;
+    if (rin.hidden){ rin.value = L.name; rin.hidden = false; $('#lookSelName').hidden = true; rbtn.textContent = 'OK'; rin.focus(); rin.select(); } else endRename(true); });
+  rin.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); endRename(true); } else if (e.key === 'Escape'){ e.preventDefault(); endRename(false); } });
+  $('#btnLookDel').addEventListener('click', e => { const b = e.currentTarget, now = performance.now();
+    if (LOOKS.del && now - LOOKS.delT < 3500){ lookDelete(LOOKS.sel); return; }
+    LOOKS.del = 1; LOOKS.delT = now; b.textContent = 'Tap again to delete'; setTimeout(() => { if (LOOKS.del && performance.now() - LOOKS.delT >= 3400){ LOOKS.del = 0; b.textContent = 'Delete'; } }, 3500); });
+  window.addEventListener('storage', e => { if (e.key === LOOKS.KEY){ looksLoad(); looksRender(); } });
+}
 const cycleUI = () => { const on = S.autoCycle; $('#cycle').disabled = !on; $('#beatSwitch').disabled = !on; };
 $('#autoCycle').checked = S.autoCycle; $('#autoCycle').addEventListener('change', e => { S.autoCycle = e.target.checked; lastSwitch = performance.now(); cycleUI(); save(); });
 $('#beatSwitch').checked = S.beatSwitch; $('#beatSwitch').addEventListener('change', e => { S.beatSwitch = e.target.checked; save(); });
@@ -3845,6 +4227,7 @@ document.addEventListener('keydown', e => {
     case 'e': case 'E': { ensureCtx(); let i = ENGINES.indexOf(engine); for (let k=0;k<ENGINES.length;k++){ i = (i+1)%ENGINES.length; if (engineAvail(ENGINES[i])) break; } setEngine(ENGINES[i]); } break;
     case 'f': case 'F': $('#btnFull').click(); break;
     case 'h': case 'H': document.body.classList.toggle('ui-hidden'); resize(); break;
+    case 's': case 'S': if (!WALL) lookSave(''); break;
   }
 });
 
@@ -3985,6 +4368,7 @@ if (WALL){ document.body.classList.add('ui-hidden'); $('#hint').classList.add('g
 deepAvailUI();
 setEngine(S.engine);
 tipsInit();
+looksInit();
 if (window.matchMedia('(max-width:899px)').matches) $('#dock').classList.add('collapsed'); else $('#dock').classList.remove('collapsed');
 if (WALL){
   if (android) setTimeout(startDevice, 300);                                  // Android live wallpaper: the phone's output mix
