@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: full-bleed stage (MilkDrop WebGL, AVS-style pixel stack, Classic analyzer, Reactor feedback) with a control dock —
-   right rail on wide screens, bottom sheet on phones. Transport always shows Visualizer + Effect dropdowns; dials live below. Dark by design. */
+   right rail on wide screens, bottom sheet on phones. The transport always shows the few controls everyone uses (visualizer,
+   scene, play and source, brightness, volume, save); Feel and the visualizer's own dials sit below; everything else is under More. Dark by design. */
 :root{
   --bg:#07080c; --panel:#0f121a; --panel-2:#161a25; --line:#232a3a; --line-2:#2f3750;
   --fg:#e9ecf4; --muted:#8c95aa; --dim:#5d6578;
@@ -88,7 +89,29 @@ input[type=range]:disabled{opacity:.4}
 .src-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .vol{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;color:var(--muted)}
 .vol input{width:76px;flex:none}
+.vol.bright + .vol{margin-left:0}
+.vol span{user-select:none;-webkit-user-select:none}
+.vol output{min-width:32px;font-family:var(--font-data);font-size:10px;text-align:right}
 .sel-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.step-row{margin-top:-2px}
+.src{position:relative;flex:none}
+.src-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:40;display:grid;gap:6px;min-width:178px;padding:8px;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--radius);box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.src-menu .btn{display:block;width:100%;text-align:left}
+.mix-row{display:flex;align-items:center;gap:10px;min-width:0}
+.mix-row .vol{margin-left:0;flex:1 1 0;min-width:0}
+.mix-row .vol input{width:auto;flex:1 1 auto;min-width:36px}
+.mix-row .vol.bright{flex-grow:1.5}
+.savebtn{display:inline-flex;align-items:center;gap:5px;flex:none}
+.savebtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.focus{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chip{background:var(--panel-2);color:var(--fg);border:1px solid var(--line-2);border-radius:999px;padding:5px 2px;font-size:11px;font-weight:600;letter-spacing:.03em;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:inherit}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.panel .fold{justify-self:start}
+#secMore .subh{margin:6px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
+#secMore .subh:first-child{margin-top:0;padding-top:0;border-top:0}
+#secMore .subh small{font-weight:400;letter-spacing:0;text-transform:none;color:var(--dim);font-family:var(--font-data);font-size:11px;margin-left:auto}
+@media (max-width:899px){ .src-menu{top:auto;bottom:calc(100% + 6px)} }
 .sel-row .lab-sel{min-width:0}
 
 .dock-body{overflow:auto;min-height:0;padding-block:14px;display:grid;gap:16px;align-content:start;overscroll-behavior:contain}
@@ -166,6 +189,19 @@ input[type=text]{width:100%;background:var(--panel-2);color:var(--fg);border:1px
 .look-cur{flex:1 1 100%;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .look-acts input{flex:1 1 100%}
 .look-acts .btn{flex:1}
+.cloud{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.cloud .note{flex:1 1 100%}
+.gbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:1 1 100%}
+.gbtn img{width:16px;height:16px;flex:none}
+.cloud-on{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1 1 100%}
+.cloud-who{flex:1 1 100%;display:flex;gap:6px;align-items:center;min-width:0;font-size:12px;color:var(--muted)}
+.cloud-who #cloudState{color:var(--fg);flex:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cloud-who #cloudWho{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--font-data);font-size:11px}
+.cdot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
+.cdot.on{background:var(--treb)}.cdot.wait{background:var(--mid)}.cdot.err{background:var(--bad)}
+.cdot.sync{background:var(--mid);animation:cpulse .9s ease-in-out infinite alternate}
+@keyframes cpulse{to{opacity:.3}}
+.cloud-on .btn{flex:1}
 .ctl input:disabled + .why,.lab-sel select:disabled{opacity:.5}
 .tipbox{position:fixed;z-index:60;left:0;top:0;max-width:290px;background:rgba(10,12,18,.97);border:1px solid var(--line-2);border-radius:6px;padding:7px 10px;font-size:12px;line-height:1.45;color:var(--fg);pointer-events:none;opacity:0;transform:translateY(-3px);transition:opacity .12s,transform .12s;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .tipbox.show{opacity:1;transform:none}
@@ -204,6 +240,8 @@ body.ui-hidden.interactive .showbtn{display:grid}
     <canvas id="swarm" hidden></canvas>
     <canvas id="mandala" hidden></canvas>
     <canvas id="laser" hidden></canvas>
+    <canvas id="weave" hidden></canvas>
+    <canvas id="box" hidden></canvas>
     <canvas id="post" hidden></canvas>
     <div id="deepRemote" hidden><div><b>3D Worlds is playing on your PC</b><span id="deepRemoteScene"></span>Pick scenes and turn the dials here; the PC follows.</div></div>
     <div class="flash" id="flash"></div>
@@ -236,6 +274,8 @@ body.ui-hidden.interactive .showbtn{display:grid}
         <div class="lab-sel"><span>Visualizer</span>
           <select id="engineSel" class="big" aria-label="Visualizer">
             <option value="hyper">Hyperspace</option>
+            <option value="weave">Sound Weaver</option>
+            <option value="box">Music Box</option>
             <option value="deep">3D Worlds (PC)</option>
             <option value="ink">Ink (fluid)</option>
             <option value="swarm">Swarm</option>
@@ -249,16 +289,23 @@ body.ui-hidden.interactive .showbtn{display:grid}
         </div>
         <div class="lab-sel"><span id="fxLabel">Effect</span>
           <select id="presetSel" aria-label="MilkDrop preset"></select>
+          <select id="avsPreset" aria-label="AVS preset" hidden></select>
           <select id="fxsel-hyper" aria-label="Hyperspace scene" hidden></select>
           <select id="fxsel-deep" aria-label="3D scene" hidden></select>
           <select id="fxsel-ink" aria-label="Ink dials" hidden></select>
           <select id="fxsel-swarm" aria-label="Swarm dials" hidden></select>
           <select id="fxsel-mandala" aria-label="Mandala dials" hidden></select>
           <select id="fxsel-laser" aria-label="Laser dials" hidden></select>
-          <select id="fxsel-avs" aria-label="AVS effect" hidden></select>
+          <select id="fxsel-weave" aria-label="Sound Weaver dials" hidden></select>
+          <select id="fxsel-box" aria-label="Music Box dials" hidden></select>
           <select id="fxsel-classic" aria-label="Classic part" hidden></select>
           <select id="fxsel-reactor" aria-label="Reactor component" hidden></select>
         </div>
+      </div>
+      <div class="row step-row">
+        <button class="btn sm" id="btnStepPrev" type="button">◀ Prev</button>
+        <button class="btn sm" id="btnStepRand" type="button">Random</button>
+        <button class="btn sm" id="btnStepNext" type="button">Next ▶</button>
       </div>
       <div class="t-row">
         <button class="btn-play" id="btnPlay" aria-label="Play">
@@ -270,27 +317,191 @@ body.ui-hidden.interactive .showbtn{display:grid}
           <div class="name" id="trackName">Demo loop</div>
           <div class="sub" id="trackSub">124 BPM · synth house, 8 bars, loops</div>
         </div>
+        <div class="src">
+          <button class="btn sm" id="btnSource" type="button" aria-haspopup="true" aria-expanded="false">Source ▾</button>
+          <div class="src-menu" id="srcMenu" hidden>
+            <button class="btn sm" id="btnDemo" type="button">Demo loop</button>
+            <label class="btn sm" for="fileIn">Load a track…</label>
+            <button class="btn sm" id="btnDevice" type="button" title="What this device is playing" hidden>Device audio</button>
+            <button class="btn sm" id="btnMic" type="button" title="Listen through the microphone">Microphone</button>
+            <button class="btn sm" id="btnSys" type="button" title="Capture what the computer is playing (desktop Chrome/Edge)">System audio</button>
+          </div>
+        </div>
+        <input type="file" id="fileIn" accept="audio/*" hidden>
+        <input type="file" id="imgIn" accept="image/*" hidden>
       </div>
       <div class="seek">
         <span class="time" id="tCur">0:00</span>
         <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek">
         <span class="time r" id="tDur">0:00</span>
       </div>
-      <div class="src-row">
-        <button class="btn sm" id="btnDemo">Demo</button>
-        <label class="btn sm" for="fileIn">Load track</label>
-        <input type="file" id="fileIn" accept="audio/*" hidden>
-        <input type="file" id="imgIn" accept="image/*" hidden>
-        <button class="btn sm" id="btnDevice" title="What this device is playing" hidden>Device audio</button>
-        <button class="btn sm" id="btnMic" title="Listen through the microphone">Mic</button>
-        <button class="btn sm" id="btnSys" title="Capture what the computer is playing (desktop Chrome/Edge)">System</button>
+      <div class="mix-row">
+        <div class="vol bright"><span>Bright</span><input type="range" id="bright" min="20" max="150" step="1" value="100" aria-label="Brightness"><output id="oBright">100%</output></div>
         <div class="vol"><span>Vol</span><input type="range" id="vol" min="0" max="100" value="80" aria-label="Volume"></div>
+        <button class="btn sm savebtn" id="btnSaveLook" type="button" aria-label="Save this look"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>Save</button>
       </div>
     </div>
 
     <div class="dock-body">
+      <section id="sec-feel">
+        <h2>Feel <small id="feelTag">full motion</small></h2>
+        <div class="ctl">
+          <label for="react">Reaction</label><output id="oReact">100%</output>
+          <input type="range" id="react" min="-100" max="100" step="1" value="0">
+          <span class="why">How strongly the music drives everything. Down calms a loud track, up wakes quiet music.</span>
+        </div>
+        <div class="ctl">
+          <label for="motion">Motion</label><output id="oMotion">100%</output>
+          <input type="range" id="motion" min="0" max="300" step="1" value="100">
+          <span class="why">How much shapes move. 0 = trance, 100% = normal, past 100% = overdrive.</span>
+        </div>
+        <div class="ctl">
+          <label for="colorPulse">Color pulse</label><output id="oColorPulse">50%</output>
+          <input type="range" id="colorPulse" min="0" max="300" step="1" value="50">
+          <span class="why">How much colors swell with the music, whatever Motion is set to.</span>
+        </div>
+        <div class="ctl">
+          <label for="trails">Trails</label><output id="oTrails">off</output>
+          <input type="range" id="trails" min="0" max="100" step="1" value="0">
+          <span class="why">Every frame leaves a fading copy behind, on any visualizer.</span>
+        </div>
+        <div class="lab-sel" id="focusWrap"><span>Music focus<em class="edtag" id="musicTag">balanced</em></span>
+          <div class="focus" id="musicFocus" role="radiogroup" aria-label="Music focus">
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="balanced">Balanced</button>
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="bass">Bass</button>
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="melody">Melody</button>
+            <button class="chip" type="button" role="radio" aria-checked="false" data-focus="hits">Hits</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-hyper" hidden>
+        <h2>Hyperspace <small>endless zoom · space · your image</small></h2>
+        <div class="panel" id="panel-hyper"></div>
+        <div class="row">
+          <button class="btn sm" id="btnHyMutate">Mutate dials</button>
+          <button class="btn sm" id="btnHyReset">Reset dials</button>
+        </div>
+        <p class="note" id="hyNote">Every scene is a shader that keeps generating new texture as it zooms, so the dive never runs out. The image scenes use a picture you load.</p>
+      </section>
+
+      <section id="sec-weave" hidden>
+        <h2>Sound Weaver <small>drag to look · scroll: speed</small></h2>
+        <div class="panel" id="panel-weave"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-box" hidden>
+        <h2>Music Box <small>every note draws its own line</small></h2>
+        <div class="panel" id="panel-box"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-deep" hidden>
+        <h2>3D Worlds <small>drag to look · scroll to zoom</small></h2>
+        <div class="panel" id="panel-deep"></div>
+        <div class="row">
+          <button class="btn sm" id="btnD3Mutate">Mutate dials</button>
+          <button class="btn sm" id="btnD3Reset">Reset dials</button>
+        </div>
+        <p class="note" id="d3Note">Every scene is raymarched on the graphics card: rays are traced into a mathematically defined world for each pixel, every frame. Double-click the picture to reset the camera.</p>
+      </section>
+      <section id="sec-ink" hidden>
+        <h2>Ink <small>drag to stir · tap to splash</small></h2>
+        <div class="panel" id="panel-ink"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-swarm" hidden>
+        <h2>Swarm <small>hold to pull · tap to blast</small></h2>
+        <div class="panel" id="panel-swarm"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-mandala" hidden>
+        <h2>Mandala <small>draw on the picture</small></h2>
+        <div class="panel" id="panel-mandala"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-laser" hidden>
+        <h2>Laser show <small>drag to spin · double-tap: new</small></h2>
+        <div class="panel" id="panel-laser"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+      <section id="sec-milk">
+        <h2>MilkDrop presets <small id="presetCount">0</small></h2>
+        <input type="text" id="presetSearch" placeholder="Filter presets…" aria-label="Filter presets">
+        <div class="lab-sel"><span>Edit this preset<em id="milkEdTag" class="edtag">as authored</em></span><select id="fxsel-milked" aria-label="Preset edit group"></select></div>
+        <div class="panel" id="panel-milked"></div>
+        <div class="row">
+          <button class="btn sm" id="btnMilkMutate">Mutate dials</button>
+          <button class="btn sm" id="btnMilkReset">Reset dials</button>
+        </div>
+        <div class="ctl">
+          <label for="blend">Blend</label><output id="oBlend">2.7 s</output>
+          <input type="range" id="blend" min="0" max="6" step="0.1" value="2.7">
+          <span class="why">Crossfade when the preset changes.</span>
+        </div>
+        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+144)</button></div>
+        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files. The edit dials layer your changes on top of the running preset, the way MilkDrop's M menu did, and are remembered per preset.</p>
+      </section>
+
+      <section id="sec-avs" hidden>
+        <h2>AVS stack <small id="avsRes">320 px</small></h2>
+        <div class="lab-sel"><span>Edit effect</span><select id="fxsel-avs" aria-label="AVS effect" hidden></select></div>
+        <div class="panel" id="panel-avs"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+          <button class="btn sm" id="btnAvsClear">Clear screen</button>
+        </div>
+        <p class="note">Runs top to bottom like an AVS preset: Trans effects warp last frame's pixels, then Render effects draw on top. ● in the Effect list = enabled.</p>
+      </section>
+
+      <section id="sec-classic" hidden>
+        <h2>Classic <small>tap the picture: analyzer · scope · both</small></h2>
+        <div class="panel" id="panel-classic"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+
+      <section id="sec-reactor" hidden>
+        <h2>Reactor <small>feedback · ring · spokes · sparks</small></h2>
+        <div class="panel" id="panel-reactor"></div>
+        <div class="row">
+          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
+          <button class="btn sm" data-mode-act="reset">Reset dials</button>
+        </div>
+      </section>
+
+
       <section id="sec-looks">
         <h2>Saved looks <small id="looksTag">none yet</small></h2>
+        <div class="cloud" id="cloudRow" hidden>
+          <button class="btn sm gbtn" id="btnCloudIn" type="button"><img id="cloudG" alt="" width="16" height="16" hidden><span id="cloudInTxt">Sign in with Google</span></button>
+          <p class="note" id="cloudNote">Sign in to keep your looks in your Google account and get them on every device you sign in on.</p>
+          <div class="cloud-on" id="cloudOn" hidden>
+            <div class="cloud-who"><i class="cdot" id="cloudDot"></i><span id="cloudState">Syncing…</span><span id="cloudWho"></span></div>
+            <button class="btn sm" id="btnCloudOut" type="button">Sign out</button>
+            <button class="btn sm" id="btnCloudDel" type="button">Delete cloud copy</button>
+          </div>
+        </div>
         <div class="look-save">
           <input type="text" id="lookName" maxlength="40" placeholder="Name this look" aria-label="Look name" autocomplete="off" spellcheck="false">
           <button class="btn sm" id="btnLookSave">Save</button>
@@ -305,198 +516,57 @@ body.ui-hidden.interactive .showbtn{display:grid}
         </div>
       </section>
 
-      <section id="sec-music">
-        <h2>Music drive <small id="musicTag">balanced</small></h2>
-        <div class="bandm">
-          <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mbB" style="--c:var(--bass)"></i></div><span class="hitled" id="hbB" title="kick"></span><span class="val" id="cbB">—</span>
-          <span class="lab" style="color:var(--mid)">Mid</span><div class="meter"><i id="mbM" style="--c:var(--mid)"></i></div><span class="hitled" id="hbM" title="snare"></span><span class="val" id="cbM">—</span>
-          <span class="lab" style="color:var(--treb)">High</span><div class="meter"><i id="mbH" style="--c:var(--treb)"></i></div><span class="hitled" id="hbH" title="hats"></span><span class="val" id="cbH">—</span>
-        </div>
-        <div class="ctl">
-          <label for="drvB">Bass drive</label><output id="oDrvB">100%</output>
-          <input type="range" id="drvB" min="0" max="300" step="1" value="100">
-          <span class="why">Kick and bass: size, zoom, punch and shockwaves.</span>
-        </div>
-        <div class="ctl">
-          <label for="drvM">Mid drive</label><output id="oDrvM">100%</output>
-          <input type="range" id="drvM" min="0" max="300" step="1" value="100">
-          <span class="why">Vocals, snare and synths: spin, twist and color shifts.</span>
-        </div>
-        <div class="ctl">
-          <label for="drvH">High drive</label><output id="oDrvH">100%</output>
-          <input type="range" id="drvH" min="0" max="300" step="1" value="100">
-          <span class="why">Hats and cymbals: sparkle, flicker and fine detail.</span>
-        </div>
-        <div class="ctl">
-          <label for="drvK">Hits</label><output id="oDrvK">100%</output>
-          <input type="range" id="drvK" min="0" max="300" step="1" value="100">
-          <span class="why">Extra punch on every kick, snare and hat it catches (the lights above).</span>
-        </div>
-        <div class="ctl">
-          <label for="dyn">Dynamics</label><output id="oDyn">70%</output>
-          <input type="range" id="dyn" min="0" max="100" step="1" value="70">
-          <span class="why">How different quiet and loud look. 0 = every song fills the screen, 100% = quiet stays calm, loud explodes.</span>
-        </div>
-      </section>
-
-      <section id="sec-feel">
-        <h2>Feel <small id="feelTag">full motion</small></h2>
-        <div class="ctl">
-          <label for="motion">Motion</label><output id="oMotion">100%</output>
-          <input type="range" id="motion" min="0" max="300" step="1" value="100">
-          <span class="why">How hard shapes react. 0 = trance, 100% = normal, past 100% = overdrive.</span>
-        </div>
-        <div class="ctl">
-          <label for="motionSens">Motion sensitivity</label><output id="oMotionSens">1.0×</output>
-          <input type="range" id="motionSens" min="-100" max="100" step="1" value="0">
-          <span class="why">Gain on the music before it moves anything: 0.1× to 10×.</span>
-        </div>
-        <div class="ctl">
-          <label for="colorPulse">Color pulse</label><output id="oColorPulse">50%</output>
-          <input type="range" id="colorPulse" min="0" max="300" step="1" value="50">
-          <span class="why">Saturation and brightness swell with the music, whatever Motion is set to.</span>
-        </div>
-        <div class="ctl">
-          <label for="colorSens">Color sensitivity</label><output id="oColorSens">1.0×</output>
-          <input type="range" id="colorSens" min="-100" max="100" step="1" value="0">
-        </div>
-        <div class="ctl">
-          <label for="trails">Trails / echo</label><output id="oTrails">off</output>
-          <input type="range" id="trails" min="0" max="100" step="1" value="0">
-          <span class="why">Every frame leaves a fading copy behind, on any visualizer.</span>
-        </div>
-        <div class="lab-sel"><span>Echo motion</span><select id="echoMode" aria-label="Echo motion"></select></div>
-        <div class="ctl">
-          <label for="echoHue">Echo color drift</label><output id="oEchoHue">0%</output>
-          <input type="range" id="echoHue" min="0" max="100" step="1" value="0">
-        </div>
-      </section>
-
-      <section id="sec-hyper" hidden>
-        <h2>Hyperspace <small>endless zoom · space · your image</small></h2>
-        <div class="row">
-          <button class="btn sm" id="btnHyPrev">◀ Prev</button>
-          <button class="btn sm" id="btnHyRand">Random</button>
-          <button class="btn sm" id="btnHyNext">Next ▶</button>
-        </div>
-        <div class="panel" id="panel-hyper"></div>
-        <div class="row">
-          <button class="btn sm" id="btnHyMutate">Mutate dials</button>
-          <button class="btn sm" id="btnHyReset">Reset scene</button>
-        </div>
-        <div class="ctl">
-          <label for="hyq">Render quality</label><output id="oHyq">auto</output>
-          <input type="range" id="hyq" min="0" max="2" step="1" value="1">
-          <span class="why">Internal resolution. Drop it if a phone stutters.</span>
-        </div>
-        <p class="note" id="hyNote">Every scene is a shader that keeps generating new texture as it zooms, so the dive never runs out. The image scenes use a picture you load.</p>
-      </section>
-
-      <section id="sec-deep" hidden>
-        <h2>3D Worlds <small>drag to look · scroll to zoom</small></h2>
-        <div class="row">
-          <button class="btn sm" id="btnD3Prev">◀ Prev</button>
-          <button class="btn sm" id="btnD3Rand">Random</button>
-          <button class="btn sm" id="btnD3Next">Next ▶</button>
-        </div>
-        <div class="panel" id="panel-deep"></div>
-        <div class="row">
-          <button class="btn sm" id="btnD3Mutate">Mutate dials</button>
-          <button class="btn sm" id="btnD3Reset">Reset scene</button>
-        </div>
-        <div class="ctl">
-          <label for="d3q">Render quality</label><output id="oD3q">auto</output>
-          <input type="range" id="d3q" min="0" max="2" step="1" value="1">
-          <span class="why">Fast / auto / sharp. It also drops resolution by itself when the graphics card can't keep up.</span>
-        </div>
-        <p class="note" id="d3Note">Every scene is raymarched on the graphics card: rays are traced into a mathematically defined world for each pixel, every frame. Double-click the picture to reset the camera.</p>
-      </section>
-      <section id="sec-ink" hidden>
-        <h2>Ink <small>drag to stir · tap to splash</small></h2>
-        <div class="panel" id="panel-ink"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-swarm" hidden>
-        <h2>Swarm <small>hold to pull · tap to blast</small></h2>
-        <div class="panel" id="panel-swarm"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-mandala" hidden>
-        <h2>Mandala <small>draw on the picture</small></h2>
-        <div class="panel" id="panel-mandala"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">Mutate dials</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-laser" hidden>
-        <h2>Laser show <small>drag to spin · double-tap: new</small></h2>
-        <div class="panel" id="panel-laser"></div>
-        <div class="row">
-          <button class="btn sm" data-mode-act="mutate">New figure</button>
-          <button class="btn sm" data-mode-act="reset">Reset these dials</button>
-        </div>
-      </section>
-      <section id="sec-milk">
-        <h2>MilkDrop presets <small id="presetCount">0</small></h2>
-        <input type="text" id="presetSearch" placeholder="Filter presets…" aria-label="Filter presets">
-        <div class="row">
-          <button class="btn sm" id="btnPrev">◀ Prev</button>
-          <button class="btn sm" id="btnRand">Random</button>
-          <button class="btn sm" id="btnNext">Next ▶</button>
-        </div>
-        <div class="lab-sel"><span>Edit this preset<em id="milkEdTag" class="edtag">as authored</em></span><select id="fxsel-milked" aria-label="Preset edit group"></select></div>
-        <div class="panel" id="panel-milked"></div>
-        <div class="row"><button class="btn sm" id="btnMilkReset">Reset edits</button></div>
-        <label class="chk on-main"><input type="checkbox" id="autoCycle"> Cycle presets automatically</label>
-        <div class="ctl">
-          <label for="cycle">Every</label><output id="oCycle">20 s</output>
-          <input type="range" id="cycle" min="5" max="120" step="5" value="20">
-        </div>
-        <label class="chk"><input type="checkbox" id="beatSwitch"> Switch on a strong beat instead</label>
-        <div class="ctl">
-          <label for="blend">Blend</label><output id="oBlend">2.7 s</output>
-          <input type="range" id="blend" min="0" max="6" step="0.1" value="2.7">
-          <span class="why">Crossfade when you change presets by hand.</span>
-        </div>
-        <div class="row"><button class="btn sm" id="btnExtra">Load extra pack (+100)</button></div>
-        <div class="ctl">
-          <label for="quality">Render quality</label><output id="oQuality">auto</output>
-          <input type="range" id="quality" min="0" max="2" step="1" value="1">
-          <span class="why">Pixel ratio 0.75 / auto / device. Drop it if a phone stutters.</span>
-        </div>
-        <p class="note" id="milkNote">Presets are compiled MilkDrop 2 files. The edit dials layer your changes on top of the running preset, the way MilkDrop's M menu did, and are remembered per preset.</p>
-      </section>
-
-      <section id="sec-avs" hidden>
-        <div class="panel" id="panel-avs"></div>
-        <h2>AVS stack <small id="avsRes">320 px</small></h2>
-        <div class="lab-sel"><span>Stack preset</span><select id="avsPreset" aria-label="AVS preset"></select></div>
-        <div class="row">
-          <button class="btn sm" id="btnAvsRand">Randomize</button>
-          <button class="btn sm" id="btnAvsClear">Clear screen</button>
-        </div>
-        <p class="note">Runs top to bottom like an AVS preset: Trans effects warp last frame's pixels, then Render effects draw on top. ● in the Effect list = enabled.</p>
-      </section>
-
-      <section id="sec-classic" hidden>
-        <div class="panel" id="panel-classic"></div>
-        <p class="note">Tap the picture to cycle analyzer → scope → both, the way clicking the main-window vis did.</p>
-      </section>
-
-      <section id="sec-reactor" hidden>
-        <div class="panel" id="panel-reactor"></div>
-      </section>
-
-      <details id="secReact">
-        <summary>Reactivity <small id="fftInfo">FFT 2048</small></summary>
+      <details id="secMore">
+        <summary>More <small>drive · fine tuning · auto-change · quality</small></summary>
         <div>
+          <h3 class="subh">Music drive</h3>
+          <div class="bandm">
+            <span class="lab" style="color:var(--bass)">Bass</span><div class="meter"><i id="mbB" style="--c:var(--bass)"></i></div><span class="hitled" id="hbB" title="kick"></span><span class="val" id="cbB">—</span>
+            <span class="lab" style="color:var(--mid)">Mid</span><div class="meter"><i id="mbM" style="--c:var(--mid)"></i></div><span class="hitled" id="hbM" title="snare"></span><span class="val" id="cbM">—</span>
+            <span class="lab" style="color:var(--treb)">High</span><div class="meter"><i id="mbH" style="--c:var(--treb)"></i></div><span class="hitled" id="hbH" title="hats"></span><span class="val" id="cbH">—</span>
+          </div>
+          <div class="ctl">
+            <label for="drvB">Bass drive</label><output id="oDrvB">100%</output>
+            <input type="range" id="drvB" min="0" max="300" step="1" value="100">
+            <span class="why">Kick and bass: size, zoom, punch and shockwaves.</span>
+          </div>
+          <div class="ctl">
+            <label for="drvM">Mid drive</label><output id="oDrvM">100%</output>
+            <input type="range" id="drvM" min="0" max="300" step="1" value="100">
+            <span class="why">Vocals, snare and synths: spin, twist and color shifts.</span>
+          </div>
+          <div class="ctl">
+            <label for="drvH">High drive</label><output id="oDrvH">100%</output>
+            <input type="range" id="drvH" min="0" max="300" step="1" value="100">
+            <span class="why">Hats and cymbals: sparkle, flicker and fine detail.</span>
+          </div>
+          <div class="ctl">
+            <label for="drvK">Hits</label><output id="oDrvK">100%</output>
+            <input type="range" id="drvK" min="0" max="300" step="1" value="100">
+            <span class="why">Extra punch on every kick, snare and hat it catches (the lights above).</span>
+          </div>
+          <div class="ctl">
+            <label for="dyn">Dynamics</label><output id="oDyn">70%</output>
+            <input type="range" id="dyn" min="0" max="100" step="1" value="70">
+            <span class="why">How different quiet and loud look. 0 = every song fills the screen, 100% = quiet stays calm, loud explodes.</span>
+          </div>
+          <h3 class="subh">Fine tuning</h3>
+          <div class="ctl">
+            <label for="motionSens">Motion sensitivity</label><output id="oMotionSens">1.0×</output>
+            <input type="range" id="motionSens" min="-100" max="100" step="1" value="0">
+            <span class="why">How strongly the music moves shapes, on top of Reaction.</span>
+          </div>
+          <div class="ctl">
+            <label for="colorSens">Color sensitivity</label><output id="oColorSens">1.0×</output>
+            <input type="range" id="colorSens" min="-100" max="100" step="1" value="0">
+            <span class="why">How strongly the music drives Color pulse, on top of Reaction.</span>
+          </div>
+          <div class="lab-sel"><span>Echo motion</span><select id="echoMode" aria-label="Echo motion"></select></div>
+          <div class="ctl">
+            <label for="echoHue">Echo color drift</label><output id="oEchoHue">0%</output>
+            <input type="range" id="echoHue" min="0" max="100" step="1" value="0">
+          </div>
+          <h3 class="subh">Reactivity <small id="fftInfo">FFT 2048</small></h3>
           <canvas id="spec" height="58"></canvas>
           <div class="bandkey">
             <span><i style="background:var(--bass)"></i>bass 20–250 Hz</span>
@@ -514,9 +584,9 @@ body.ui-hidden.interactive .showbtn{display:grid}
             <span class="bpm" id="bpm">— <b>BPM</b></span>
           </div>
           <div class="ctl">
-            <label for="sens">Sensitivity</label><output id="oSens">1.2×</output>
+            <label for="sens">Input gain</label><output id="oSens">1.2×</output>
             <input type="range" id="sens" min="0.1" max="6" step="0.05" value="1.2">
-            <span class="why">Gain on every band before smoothing. Turn up for mic input.</span>
+            <span class="why">Level of the sound before it is analysed. Turn up for a quiet mic.</span>
           </div>
           <div class="ctl">
             <label for="rel">Release</label><output id="oRel">0.80</output>
@@ -528,6 +598,10 @@ body.ui-hidden.interactive .showbtn{display:grid}
             <input type="range" id="thr" min="1.05" max="2.2" step="0.05" value="1.35">
             <span class="why">How sharply the bass must jump to count as a kick. Lower = more beats.</span>
           </div>
+          <h3 class="subh">Auto-change</h3>
+          <div class="lab-sel"><span>Change the scene or preset by itself</span><select id="autoSel" aria-label="Auto-change"></select></div>
+          <h3 class="subh">Render quality</h3>
+          <div class="lab-sel"><span>Every visualizer, on this device</span><select id="rqSel" aria-label="Render quality"><option value="0">Fast</option><option value="1">Auto</option><option value="2">Sharp</option></select></div>
         </div>
       </details>
 
@@ -547,15 +621,15 @@ body.ui-hidden.interactive .showbtn{display:grid}
         <summary>Keys</summary>
         <div class="keys">
           <kbd>Space</kbd><span>play / pause</span>
-          <kbd>N</kbd><span>next preset / scene</span>
-          <kbd>P</kbd><span>previous preset</span>
-          <kbd>R</kbd><span>random preset</span>
+          <kbd>N</kbd><span>next scene, preset or dial page</span>
+          <kbd>P</kbd><span>previous scene, preset or dial page</span>
+          <kbd>R</kbd><span>random scene or preset (new dials where there are no scenes)</span>
           <kbd>E</kbd><span>next visualizer</span>
           <kbd>F</kbd><span>fullscreen</span>
           <kbd>H</kbd><span>hide / show controls</span>
           <kbd>S</kbd><span>save the look on screen</span>
-          <kbd>Drag</kbd><span>stir Ink, pull the Swarm, draw a Mandala, spin the Laser, look around in 3D Worlds</span>
-          <kbd>Wheel</kbd><span>zoom the Laser and 3D Worlds</span>
+          <kbd>Drag</kbd><span>stir Ink, pull the Swarm, draw a Mandala, spin the Laser, look around in 3D Worlds, Sound Weaver and Music Box</span>
+          <kbd>Wheel</kbd><span>zoom the Laser, 3D Worlds and Music Box, speed up Sound Weaver</span>
         </div>
       </details>
     </div>
@@ -571,7 +645,7 @@ body.ui-hidden.interactive .showbtn{display:grid}
 const $ = s => document.querySelector(s);
 const clamp = (v,a,b) => v<a?a:v>b?b:v;
 const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
-const ENGINES = ['hyper','deep','ink','swarm','mandala','laser','milk','avs','classic','reactor'];
+const ENGINES = ['hyper','weave','box','deep','ink','swarm','mandala','laser','milk','avs','classic','reactor'];
 const WALL = /wallpaper/.test(location.hash);   // #wallpaper: no UI, driven by a host (Android live wallpaper, Lively, Wallpaper Engine, Cast receiver)
 
 /* ================= defaults ================= */
@@ -683,7 +757,7 @@ const HC = {
   hue:     { t:'range', k:'hue', l:'Hue shift', min:0, max:360, step:1, fmt:deg },
   hueSpeed:{ t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s' },
   sat:     { t:'range', k:'sat', l:'Saturation', min:0, max:2, step:0.01 },
-  bright:  { t:'range', k:'bright', l:'Brightness', min:0.2, max:3, step:0.01 },
+  bright:  { t:'range', k:'bright', l:'Scene brightness', min:0.2, max:3, step:0.01 },
   contrast:{ t:'range', k:'contrast', l:'Contrast', min:0.5, max:2, step:0.01 },
   chroma:  { t:'range', k:'chroma', l:'Chromatic split (beats widen it)', min:0, max:1.5, step:0.01 },
   vig:     { t:'range', k:'vig', l:'Vignette', min:0, max:1, step:0.01 },
@@ -895,6 +969,65 @@ const MODE_DEF = {
            motion:{ spinX:0.3, spinY:0.5, wobble:0.7, bassSize:0.6, trebSpin:0.4, zoom:1 },
            beam:{ width:1.6, glow:0.7, persist:0.7, colorMode:'gradient', pal:'ice', hueSpeed:12 } }
 };
+/* ---------- Sound Weaver (v12): dials and defaults ---------- */
+MODE_UI.weave = {
+  flight: { label:'Flight', desc:'A slow flight down a winding tunnel. Three pens fly ahead of you and the music steers them; what they write stays where it was written and you fly through it. Drag the picture to look around, scroll or pinch to change speed.', controls:[
+    { t:'range', k:'speed', l:'Speed', min:10, max:240, step:1, tip:'How fast you fly. Slow coils the ribbons up tight; fast stretches them into long streaks.' },
+    { t:'range', k:'sym', l:'Symmetry', min:1, max:8, step:1, tip:'Copies of every ribbon around the tunnel. 1 is a single set; 8 is a full mandala.' },
+    { t:'range', k:'glide', l:'Glide', min:1, max:10, step:1, tip:'How smoothly the pens follow the music. High glides in long curves; low follows every change.' },
+    { t:'range', k:'twist', l:'Twist', min:0, max:3, step:0.05, tip:'How fast the ribbons spiral around you. The music adds to it.' },
+    { t:'range', k:'bend', l:'Tunnel bend', min:0, max:2, step:0.05, tip:'How much the tunnel winds left, right, up and down as you fly.' },
+    { t:'range', k:'roll', l:'Roll', min:0, max:2, step:0.05, tip:'The view slowly rolls from side to side.' },
+    { t:'range', k:'ahead', l:'Pen distance', min:250, max:700, step:10, tip:'How far ahead of you the pens write. Further away gives longer ribbons and a smaller ring of pens.' } ] },
+  music: { label:'Music', desc:'What each part of the music writes into the ribbons.', controls:[
+    { t:'range', k:'swell', l:'Swell', min:0, max:2, step:0.05, tip:'Each band pushes its ribbon outward as it gets louder: bass the violet one, melody the cyan one, highs the gold thread.' },
+    { t:'range', k:'beads', l:'Kick beads', min:0, max:2, step:0.05, tip:'Every kick leaves a bead of thickness on the bass ribbon, so the beat is frozen into it as it flies past.' },
+    { t:'range', k:'steer', l:'Melody steer', min:0, max:2, step:0.05, tip:'Rising and falling pitch steers the melody ribbon around the tunnel.' },
+    { t:'range', k:'branches', l:'Kick branches', min:0, max:4, step:1, tip:'Kicks sprout branches that peel away from the bass ribbon. This is how many can grow at once (0 = none).' },
+    { t:'range', k:'rings', l:'Snare rings', min:0, max:2, step:0.05, tip:'Each snare sends a ring down the tunnel. 0 = none.' },
+    { t:'range', k:'shimmer', l:'Hat shimmer', min:0, max:2, step:0.05, tip:'Hi-hats leave twinkling sparks on the highs thread. 0 = none.' } ] },
+  look: { label:'Look', desc:'Which ribbons show, how thick and bright they are, and their colors.', controls:[
+    { t:'select', k:'ribbons', l:'Ribbons', o:[['three','Bass, melody and highs'],['two','Bass and melody'],['bass','Bass only'],['melody','Melody only']], tip:'Which parts of the music get a ribbon.' },
+    { t:'range', k:'width', l:'Ribbon width', min:0.3, max:3, step:0.05, tip:'Thickness of every ribbon.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light around the ribbons.' },
+    { t:'range', k:'blur', l:'Motion blur', min:0, max:0.9, step:0.01, tip:'How long moving lines leave a streak behind.' },
+    { t:'select', k:'pal', l:'Color scheme', o:[['neon','Neon (violet, cyan, gold)'], ...PAL_OPTS], tip:'Neon gives each band its own color; the others take a palette.' },
+    { t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:60, step:1, fmt:v=>v+'°/s', tip:'How fast the colors drift on their own.' },
+    { t:'range', k:'stars', l:'Stars', min:0, max:1, step:0.01, tip:'Faint dust in the distance that shows how fast you are flying.' } ] }
+};
+MODE_DEF.weave = {
+  flight:{ speed:80, sym:3, glide:6, twist:1, bend:1, roll:1, ahead:420 },
+  music:{ swell:1, beads:1, steer:1, branches:2, rings:1, shimmer:1 },
+  look:{ ribbons:'three', width:1, glow:0.6, blur:0.5, pal:'neon', hueSpeed:6, stars:0.5 }
+};
+/* ---------- Music Box (v14): dials and defaults ---------- */
+const BOX_COLORS = [['fifths','By note: circle of fifths'],['chromatic','By note: rainbow'], ...PAL_OPTS];
+MODE_UI.box = {
+  notes: { label:'Notes', desc:'Every note the music is playing draws its own line on a slowly turning drum: low notes at the bottom, high notes at the top, each note in its own colour. Held notes become long arcs, melodies step or glide, chords stack up. Loudness only sets how bright a line is.', controls:[
+    { t:'range', k:'sens', l:'Note sensitivity', min:0.3, max:3, step:0.05, tip:'How easily a sound counts as a note. Raise it for quiet or busy music, lower it if stray lines appear.' },
+    { t:'range', k:'voices', l:'Voices', min:1, max:6, step:1, tip:'How many notes can draw at once: 1 follows only the strongest (usually the melody or bass), 6 draws full chords.' },
+    { t:'range', k:'glide', l:'Glide', min:0, max:1, step:0.01, tip:'How a line moves to the next nearby note: 0 jumps straight there, higher slides there in a smooth curve.' },
+    { t:'range', k:'sustain', l:'Sustain', min:0, max:1, step:0.01, tip:'How long a line keeps going after its note fades.' },
+    { t:'select', k:'range', l:'Pitch range', o:[['wide','Wide (E1 to E7)'],['mid','Middle (C2 to C6)'],['tight','Tight (C3 to C6)']], tip:'Which notes fit on the drum, bottom to top. Tight spreads melodies out more.' } ] },
+  motion: { label:'Motion', desc:'How the drum turns and how you see it. Drag the picture to look around, scroll or pinch to zoom.', controls:[
+    { t:'range', k:'loop', l:'Turn time', min:4, max:30, step:0.5, fmt:v=>v+' s', tip:'Seconds for one full turn of the drum: short packs the notes tight, long spreads a few bars around it.' },
+    { t:'range', k:'tilt', l:'Tilt', min:0, max:1.2, step:0.01, tip:'How far above the drum you look from.' },
+    { t:'range', k:'sway', l:'Sway', min:0, max:2, step:0.05, tip:'The view slowly drifts around the drum.' },
+    { t:'range', k:'zoom', l:'Zoom', min:0.5, max:2, step:0.01, tip:'Size on screen. Scroll or pinch does the same.' },
+    { t:'range', k:'history', l:'History', min:0.2, max:1, step:0.01, tip:'How much of a turn stays visible before old notes fade out.' } ] },
+  look: { label:'Look', desc:'Line thickness, glow, colours and the guide marks.', controls:[
+    { t:'range', k:'width', l:'Line width', min:0.3, max:3, step:0.05, tip:'Thickness of every note line.' },
+    { t:'range', k:'glow', l:'Glow', min:0, max:1, step:0.01, tip:'Soft light around the lines.' },
+    { t:'select', k:'colors', l:'Colours', o:BOX_COLORS, tip:'Circle of fifths gives notes that sound good together neighbouring colours; rainbow runs C to B around the colour wheel; the palettes spread the notes across a palette.' },
+    { t:'range', k:'bars', l:'Beat lines', min:0, max:1, step:0.01, tip:'Each kick draws a faint line across the drum, like bar lines on sheet music. 0 = none.' },
+    { t:'range', k:'sparkle', l:'Hat sparkle', min:0, max:1, step:0.01, tip:'Hi-hats twinkle at the playhead. 0 = none.' },
+    { t:'range', k:'grid', l:'Octave rings', min:0, max:1, step:0.01, tip:'Faint rings at every C, like the lines of a staff.' } ] }
+};
+MODE_DEF.box = {
+  notes:{ sens:1, voices:4, glide:0.5, sustain:0.35, range:'wide' },
+  motion:{ loop:12, tilt:0.38, sway:0.6, zoom:1, history:0.85 },
+  look:{ width:1, glow:0.6, colors:'fifths', bars:0.45, sparkle:0.5, grid:0.35 }
+};
 const MODE_KEYS = Object.keys(MODE_UI);
 
 /* ================= 3D Worlds (PC): ten raymarched scenes ================= */
@@ -917,7 +1050,7 @@ const D3C = {
   hue:    { t:'range', k:'hue', l:'Hue shift', min:0, max:360, step:1, fmt:v=>Math.round(v)+'°', tip:'Turns every color around the color wheel.' },
   hueSpeed:{ t:'range', k:'hueSpeed', l:'Hue drift', min:0, max:90, step:1, fmt:v=>v+'°/s', tip:'How fast the colors cycle on their own.' },
   sat:    { t:'range', k:'sat', l:'Saturation', min:0, max:2, step:0.01, tip:'Color strength.' },
-  bright: { t:'range', k:'bright', l:'Brightness', min:0.2, max:3, step:0.01, tip:'Overall brightness.' },
+  bright: { t:'range', k:'bright', l:'Scene brightness', min:0.2, max:3, step:0.01, tip:'Brightness of this scene. Bright, next to Vol, dims or lifts every visualizer at once.' },
   contrast:{ t:'range', k:'contrast', l:'Contrast', min:0.5, max:2, step:0.01, tip:'Contrast.' },
   chroma: { t:'range', k:'chroma', l:'Chromatic split', min:0, max:1.5, step:0.01, tip:'Red/blue fringes at the edges; beats widen them.' },
   vig:    { t:'range', k:'vig', l:'Vignette', min:0, max:1, step:0.01, tip:'Darkens the corners.' }
@@ -967,9 +1100,10 @@ const ECHO = {
 };
 const ECHO_OPTS = [['zoomin','Tunnel (flows outward)'],['zoomout','Pull back (flows inward)'],['smear','Smear (stays put)'],['spin','Spin'],['swirl','Swirl'],['drift','Drift'],['pulse','Beat pump'],['mirror','Mirror'],['kaleido','Kaleidoscope']];
 const ECHO_KEYS = Object.keys(ECHO);
+const AUTO_OPTS = [['off','Off: stay on what I pick'],['15','Every 15 seconds'],['30','Every 30 seconds'],['60','Every minute'],['120','Every 2 minutes'],['beat','On strong beats']];
 
 const DEF = { v:4, engine:'hyper', preset:'', sens:1.2, rel:0.80, thr:1.35, vol:80, autoCycle:false, beatSwitch:false, cycle:20, blend:2.7, quality:1, motion:1, colorPulse:0.5, hyq:1,
-  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7 };
+  motionSens:1, colorSens:1, trails:0, echoMode:'zoomin', echoHue:0, d3q:1, drvB:1, drvM:1, drvH:1, drvK:1, dyn:0.7, bright:1, react:1, auto:'off' };
 let S;
 function buildState(j){ let S;
   if (!j || (j.v !== 2 && j.v !== 3 && j.v !== 4)) j = {};
@@ -989,8 +1123,16 @@ function buildState(j){ let S;
   for (const k in D3_SCENES) S.deep.fx[k] = Object.assign({}, D3_SCENES[k].def, (j.deep && j.deep.fx && j.deep.fx[k]) || {});
   const num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; };
   S.motion = num(S.motion, 0, 3, 1); S.colorPulse = num(S.colorPulse, 0, 3, 0.5); S.motionSens = num(S.motionSens, 0.1, 10, 1); S.colorSens = num(S.colorSens, 0.1, 10, 1);
-  S.trails = num(S.trails, 0, 1, 0); S.echoHue = num(S.echoHue, 0, 1, 0); S.sens = num(S.sens, 0.1, 6, 1.2); if (!ECHO_KEYS.includes(S.echoMode)) S.echoMode = 'zoomin';
+  S.bright = num(S.bright, 0.2, 1.5, 1); S.trails = num(S.trails, 0, 1, 0); S.echoHue = num(S.echoHue, 0, 1, 0); S.sens = num(S.sens, 0.1, 6, 1.2); if (!ECHO_KEYS.includes(S.echoMode)) S.echoMode = 'zoomin';
   S.drvB = num(S.drvB, 0, 3, 1); S.drvM = num(S.drvM, 0, 3, 1); S.drvH = num(S.drvH, 0, 3, 1); S.drvK = num(S.drvK, 0, 3, 1); S.dyn = num(S.dyn, 0, 1, 0.7);
+  // v15: Reaction is one master over both sensitivities. Older settings hand their overall level to it and keep their balance.
+  if (j.react === undefined){ const r = clamp(Math.sqrt(S.motionSens*S.colorSens), 0.1, 10);
+    if (Math.abs(r - 1) > 0.02){ S.react = +r.toFixed(3); S.motionSens = +clamp(S.motionSens/r, 0.1, 10).toFixed(3); S.colorSens = +clamp(S.colorSens/r, 0.1, 10).toFixed(3); } }
+  S.react = num(S.react, 0.1, 10, 1);
+  // v15: one Auto-change for every visualizer replaces MilkDrop's preset cycling
+  if (j.auto === undefined && j.autoCycle){ const c = +j.cycle || 20; S.auto = j.beatSwitch ? 'beat' : String([15, 30, 60, 120].reduce((a, b) => Math.abs(b - c) < Math.abs(a - c) ? b : a)); }
+  if (!AUTO_OPTS.some(o => o[0] === S.auto)) S.auto = 'off';
+  S.autoCycle = false; S.beatSwitch = false;
   return S;
 }
 { let j = null; try { const raw = localStorage.getItem('spectral-drift'); if (raw) j = JSON.parse(raw); } catch(e){} S = buildState(j); }
@@ -1193,7 +1335,7 @@ const lerp = (a, b, k) => a + (b-a)*k;
 /* Motion 0–1 eases toward the resting state; 1–3 is overdrive: the distance from rest is multiplied (quiet gets quieter, loud gets louder).
    Motion sensitivity is a gain on the music before any of that. */
 function applyMotion(){
-  const k = S.motion, g = S.motionSens;
+  const k = S.motion, g = S.motionSens*S.react;
   // Music drive: each band's slider scales what the engines see of that band; Hits scales the kick / snare / hat impulses.
   const f = (t, w) => { const v = Math.min(w > 1 ? 2.2 : 1.3, t*g*w); return k <= 1 ? lerp(REST, v, k) : clamp(REST + (v - REST)*k, 0, 2.2); };
   A.bass = f(A.tBass, S.drvB); A.mid = f(A.tMid, S.drvM); A.treb = f(A.tTreb, S.drvH); A.level = f(A.tLevel, (S.drvB + S.drvM + S.drvH)/3);
@@ -1371,8 +1513,8 @@ function analyseHost(now){
 /* Resting shapes for Motion 0: a slow breathing wave and a softly rolling spectrum, so scopes and bars glide instead of going flat. */
 function waveRest(u){ return 0.28*Math.sin(u*12.566 + tSec*0.6)*(0.65 + 0.35*Math.sin(tSec*0.23)); }
 function specRest(u){ return 0.2 + 0.14*(0.5 + 0.5*Math.sin(u*7.5 + tSec*0.5)); }
-function waveAt(u){ const k = S.motion; const v = clamp((wave ? (wave[Math.floor(clamp(u,0,0.9999)*wave.length)]-128)/128 : 0)*S.motionSens, -1.3, 1.3); return k < 1 ? lerp(waveRest(u), v, k) : k > 1 ? clamp(v*k, -1.6, 1.6) : v; }
-function specAt(u){ const k = S.motion; const v = Math.min(1.6, specBuf[Math.floor(clamp(u,0,0.9999)*75)]*S.motionSens*bandW(u)); if (k < 1) return lerp(specRest(u), v, k); if (k === 1) return v; const r = specRest(u); return clamp(r + (v - r)*k, 0, 1.6); }
+function waveAt(u){ const k = S.motion; const v = clamp((wave ? (wave[Math.floor(clamp(u,0,0.9999)*wave.length)]-128)/128 : 0)*S.motionSens*S.react, -1.3, 1.3); return k < 1 ? lerp(waveRest(u), v, k) : k > 1 ? clamp(v*k, -1.6, 1.6) : v; }
+function specAt(u){ const k = S.motion; const v = Math.min(1.6, specBuf[Math.floor(clamp(u,0,0.9999)*75)]*S.motionSens*S.react*bandW(u)); if (k < 1) return lerp(specRest(u), v, k); if (k === 1) return v; const r = specRest(u); return clamp(r + (v - r)*k, 0, 1.6); }
 function specTrue(u){ return specBuf[Math.floor(clamp(u,0,0.9999)*75)]; }
 function srcVal(name){ return name==='bass'?A.bass : name==='mid'?A.mid : name==='treble'?A.treb : name==='beat'?A.beat : name==='kick'?A.kick : name==='snare'?A.snare : name==='hats'?A.hat : A.level; }
 
@@ -1422,7 +1564,7 @@ function milkDrive(f){
   if (A.hat > 0.02){ f.warp *= 1 + A.hat*0.3; f.wave_a = Math.min(1, f.wave_a*(1 + A.hat*0.3)); }
 }
 function milkAudio(){
-  const k = S.motion, g = S.motionSens; let src = wave ? wave.subarray(wave.length-1024) : null;
+  const k = S.motion, g = S.motionSens*S.react; let src = wave ? wave.subarray(wave.length-1024) : null;
   if (src && (S.drvB !== 1 || S.drvM !== 1 || S.drvH !== 1)) src = milkBands(src);
   if (k === 1 && g === 1 && src) return src;
   let dg = 1;
@@ -1475,16 +1617,19 @@ function loadPreset(i, blend){
   S.preset = n; save(); castSend('preset', n); lastSwitch = performance.now(); if (filtered.includes(n)) $('#presetSel').value = n; if (engine==='milk') flash(n); bindMilkEdits();
 }
 function stepPreset(d){
+  lastSwitch = performance.now();
   if (engine==='hyper'){ hyStep(d); return; }
   if (engine==='deep'){ deepStep(d); if (!D3.ok) $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; return; }
-  if (MODE_UI[engine]){ modeStepGroup(engine, d); return; }
+  if (MODE_UI[engine] || engine==='reactor'){ modeStepGroup(engine, d); return; }
+  if (engine==='classic'){ classicMode(d); return; }
   if (engine==='avs'){ avsStep(d); return; }
   if (!names.length) return; const pool = filtered.length ? filtered : names; const n = pool[((pool.indexOf(names[cur]) + d) % pool.length + pool.length) % pool.length]; loadPreset(names.indexOf(n)); }
 function randPreset(){
+  lastSwitch = performance.now();
   if (engine==='hyper'){ hyRandomScene(); return; }
   if (engine==='deep'){ deepRandom(); if (!D3.ok) $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; return; }
   if (engine==='laser'){ laserRandom(); return; }
-  if (MODE_UI[engine]){ modeMutate(engine); return; }
+  if (MODE_UI[engine] || engine==='classic' || engine==='reactor'){ randomizeAll(engine); return; }
   if (engine==='avs'){ avsRandomize(); return; }
   if (!names.length) return; const pool = filtered.length ? filtered : names; let n; do { n = pool[Math.floor(Math.random()*pool.length)]; } while (pool.length>1 && n===names[cur]); loadPreset(names.indexOf(n)); }
 let flashT = 0; function flash(txt){ if (WALL) return; const f = $('#flash'); f.textContent = txt; f.classList.add('show'); clearTimeout(flashT); flashT = setTimeout(()=>f.classList.remove('show'), 2600); }
@@ -1494,11 +1639,11 @@ function loadExtra(){
   if (extraLoaded) return; const b = $('#btnExtra'); b.disabled = true; b.textContent = 'Loading…';
   const s = el('script'); s.src = 'https://cdn.jsdelivr.net/npm/butterchurn-presets@2.4.7/lib/butterchurnPresetsExtra.min.js';
   s.onload = () => { const X = window.butterchurnPresetsExtra && (window.butterchurnPresetsExtra.getPresets ? window.butterchurnPresetsExtra : window.butterchurnPresetsExtra.default); const n = X && X.getPresets ? addPresets(X.getPresets()) : 0; extraLoaded = true; b.textContent = '+' + n + ' presets added'; toast(n + ' extra presets added'); };
-  s.onerror = () => { b.disabled = false; b.textContent = 'Load extra pack (+100)'; toast('Extra pack failed to load'); };
+  s.onerror = () => { b.disabled = false; b.textContent = 'Load extra pack (+144)'; toast('Extra pack failed to load'); };
   document.head.appendChild(s);
 }
 function onBeat(){
-  if (engine==='milk' && S.beatSwitch && A.rawBass > 0.6 && performance.now() - lastSwitch > Math.max(4000, S.cycle*250)) randPreset();
+  if (S.auto === 'beat' && A.rawBass > 0.6 && performance.now() - lastSwitch > 10000) autoChange();
   if (engine==='reactor' && S.reactor.fx.burst.on && S.motion > 0.12 && S.drvB*S.drvK > 0.05) bursts.push({ r: ringR, a: Math.min(1, (0.7 + 0.3*AF.str[0])*S.motion*Math.min(1.2, S.drvB*S.drvK)) });
 }
 
@@ -1988,7 +2133,7 @@ const UI = {
   hyper: { effects: HY_SCENES },
   milked: { effects: ME_UI },
   deep: { effects: D3_SCENES },
-  swarm: { effects: MODE_UI.swarm }, ink: { effects: MODE_UI.ink }, mandala: { effects: MODE_UI.mandala }, laser: { effects: MODE_UI.laser },
+  swarm: { effects: MODE_UI.swarm }, ink: { effects: MODE_UI.ink }, mandala: { effects: MODE_UI.mandala }, laser: { effects: MODE_UI.laser }, weave: { effects: MODE_UI.weave }, box: { effects: MODE_UI.box },
   reactor: { effects: {
     feedback: { label:'Feedback', controls:[
       { t:'range', k:'trail', l:'Trail (decay)', min:0.70, max:0.985, step:0.005, fmt:v=>v.toFixed(3) },
@@ -2075,6 +2220,7 @@ function renderPanel(eng){
     inp.addEventListener('input', () => { st[c.k] = +inp.value; out.textContent = f(+inp.value); changed(eng, fxKey, c.k); });
     w.append(lab, out, inp); if (c.hint){ const h = el('span','why'); h.textContent = c.hint; w.appendChild(h); } host.appendChild(tipd(w, c));
   });
+  panelFold(host, eng, fxKey, schema, schema.desc ? 2 : 1);
   if (eng==='avs') compileFormulas(fxKey);
 }
 function changed(eng, fx, k){
@@ -2087,6 +2233,23 @@ function changed(eng, fx, k){
     if (k==='fx' || k==='fy' || k==='fd' || k==='fr') compileFormulas(fx);
     if (fx==='move') AV.lutKey = '';
   }
+}
+
+// v15: a panel with more than 7 dials shows 4 key dials first and an "All dials" button for the rest (remembered per visualizer).
+// Key dials: the shape-defining ones for each Hyperspace scene, otherwise the first four (the schemas list the main dials first).
+const KEY_DIALS = { hyper:{ nebula:['speed','twist','pal','trail'], hyper:['speed','stars','pal','trail'], galaxy:['speed','arms','pal','trail'], wormhole:['speed','depth','pal','trail'],
+  void:['speed','detail','pal','trail'], droste:['speed','nest','pal','trail'], kaleido:['speed','arms','detail','hue'], liquid:['inject','warp','fbrot','hue'], imgtunnel:['speed','depth','pal','trail'] } };
+const FOLD = { open:{}, KEY:'spectral-drift-fold' };
+try { FOLD.open = JSON.parse(localStorage.getItem(FOLD.KEY) || '{}') || {}; } catch(e){ FOLD.open = {}; }
+function panelFold(host, eng, fxKey, schema, off){
+  const ctl = schema.controls, kids = Array.prototype.slice.call(host.children, off, off + ctl.length), dial = c => c.t !== 'vars' && c.t !== 'head' && c.t !== 'imgbtn';
+  const dials = ctl.filter(dial); if (dials.length <= 7) return;
+  const keys = new Set((KEY_DIALS[eng] && KEY_DIALS[eng][fxKey]) || dials.slice(0, 4).map(c => c.k)), open = !!FOLD.open[eng];
+  if (!open) ctl.forEach((c, i) => { const n = kids[i]; if (n && (c.t === 'head' || c.t === 'vars' || (dial(c) && !keys.has(c.k)))) n.hidden = true; });
+  const more = dials.filter(c => !keys.has(c.k)).length, b = el('button', 'btn sm fold'); b.type = 'button';
+  b.textContent = open ? 'Fewer dials ▴' : 'All dials (' + more + ' more) ▾';
+  b.addEventListener('click', () => { FOLD.open[eng] = !open; try { localStorage.setItem(FOLD.KEY, JSON.stringify(FOLD.open)); } catch(e){} renderPanel(eng); });
+  host.appendChild(b);
 }
 
 /* ================= image source: Hyperspace image scenes + AVS Picture ================= */
@@ -2220,10 +2383,11 @@ vec3 sceneVoid(vec2 p){
     vec3 q = abs(vec3(0.9) - mod(ro + dir*s*0.6, vec3(1.8)));
     float pl = 0.0, sum = 0.0;
     for (int j = 0; j < 11; j++){ q = abs(q)/dot(q, q) - fold; float l = length(q); sum += abs(l - pl); pl = l; }
-    acc += fade*mix(vec3(s, s*s, s*s*s), pal(s*1.5 + 0.2), 0.55)*sum*sum*sum*0.00045;
+    float a = sum*sum*sum*0.00045; a = a/(1.0 + a*0.6);
+    acc += fade*mix(vec3(s, s*s, s*s*s), pal(s*1.5 + 0.2), 0.55)*a;
     fade *= 0.74; s += 0.12;
   }
-  return acc*(0.6 + 0.6*uLevel + 0.4*uBeat);
+  return acc*(0.75 + 0.35*uLevel + 0.25*uBeat);
 }
 // Droste: the image nested inside itself forever, zooming in
 vec3 sceneDroste(vec2 p){
@@ -2290,7 +2454,7 @@ const HY_DISP = `#version 300 es
 precision highp float;
 uniform sampler2D uTex;
 uniform vec2 uRes;
-uniform float uHue, uSat, uBright, uContrast, uChroma, uVig;
+uniform float uHue, uSat, uBright, uContrast, uChroma, uVig, uExpo;
 out vec4 fragColor;
 vec3 hueRot(vec3 c, float h){
   const mat3 toY = mat3(0.299, 0.596, 0.211, 0.587, -0.274, -0.523, 0.114, -0.322, 0.312);
@@ -2302,7 +2466,9 @@ void main(){
   vec3 c = vec3(texture(uTex, uv + d).r, texture(uTex, uv).g, texture(uTex, uv - d).b);
   c = hueRot(c, uHue);
   float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, uSat);
-  c *= uBright; c = (c - 0.5)*uContrast + 0.5;
+  c *= uBright*uExpo; c = max((c - 0.5)*uContrast + 0.5, 0.0);
+  // soft shoulder: below 0.62 nothing changes, brighter values roll off toward white instead of clipping flat
+  c = mix(c, vec3(0.62) + 0.38*(1.0 - exp(-(c - 0.62)/0.38)), step(vec3(0.62), c));
   vec2 v = uv - 0.5; c *= 1.0 - uVig*dot(v, v)*1.8;
   fragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
 }`;
@@ -2315,7 +2481,9 @@ const HY_PALS = {
   moon:    [[0.55,0.55,0.62],[0.45,0.45,0.45],[1,1,1],[0.00,0.05,0.12]]
 };
 const HY_U = ['uPrev','uImg','uRes','uCenter','uTime','uZoom','uFlight','uRot','uBass','uMid','uTreb','uLevel','uBeat','uScene','uFirst','uTwist','uArms','uDetail','uOct','uStars','uStreak','uCore','uTrail','uFbZoom','uFbRot','uWarp','uKal','uNest','uLevelRot','uImgScale','uInject','uDepth','uWobble','uImgAsp','uPa','uPb','uPc','uPd'];
-const HY_UD = ['uTex','uRes','uHue','uSat','uBright','uContrast','uChroma','uVig'];
+const HY_UD = ['uTex','uRes','uHue','uSat','uBright','uContrast','uChroma','uVig','uExpo'];
+// per-scene exposure: scenes whose maths comes out much brighter than the rest are brought into line (dials stay as they were)
+const HY_EXPO = { void:0.8, wormhole:0.5, imgtunnel:0.7, droste:0.85, kaleido:0.9, liquid:0.8 }, D3_EXPO = { gyroid:0.55, cathedral:0.75 };
 const hyCv = $('#hyper');
 const HY = { tried:false, ok:false, gl:null, fb:[], tx:[], W:0, H:0, cur:0, frame:0, zoom:0, flight:0, rot:0, hue:0, imgVer:0, imgAsp:1, imgTex:null, pF:null, pD:null, uF:{}, uD:{}, t0:performance.now() };
 function hyProgram(gl, fsrc){
@@ -2361,7 +2529,7 @@ function hyUploadImage(){
 }
 function hySetScene(key){ castSend('hyscene', key);
   if (!HY_SCENES[key]) return;
-  S.hyper.scene = key; save(); HY.frame = 0;
+  S.hyper.scene = key; save(); HY.frame = 0; lastSwitch = performance.now();
   const sel = $('#fxsel-hyper'); if (sel.value !== key) sel.value = key;
   renderPanel('hyper'); flash('Hyperspace · ' + HY_SCENES[key].label);
 }
@@ -2404,7 +2572,7 @@ function renderHyper(now, dt){
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, HY.tx[dst]);
   const D = HY.uD; gl.uniform1i(D.uTex, 0); gl.uniform2f(D.uRes, hyCv.width, hyCv.height);
   gl.uniform1f(D.uHue, (val('hue') + HY.hue)*Math.PI/180); gl.uniform1f(D.uSat, val('sat')); gl.uniform1f(D.uBright, val('bright')*(0.92 + 0.16*A.level + 0.1*A.kick));
-  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 1.6*A.beat + 2.2*A.hat)); gl.uniform1f(D.uVig, val('vig'));
+  gl.uniform1f(D.uContrast, val('contrast')); gl.uniform1f(D.uChroma, val('chroma')*(1 + 1.6*A.beat + 2.2*A.hat)); gl.uniform1f(D.uVig, val('vig')); gl.uniform1f(D.uExpo, HY_EXPO[key] || 1);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   HY.cur = dst; HY.frame++;
 }
@@ -2547,7 +2715,7 @@ function postFrame(dt){
 
 /* ================= new modes: Swarm · Ink · Mandala · Laser (and the stage pointer they share) ================= */
 // Every mode keeps playing by itself from the music; on top of that each one has its own way to play with it on the picture.
-const INTERACTIVE = new Set(['swarm', 'ink', 'mandala', 'laser', 'deep']);
+const INTERACTIVE = new Set(['swarm', 'ink', 'mandala', 'laser', 'deep', 'weave', 'box']);
 const TAU = Math.PI*2;
 let RGEN = 1;                                   // bumped by resize(); engines re-measure the stage when it changes
 const MODE_RT = {};                             // per engine: { down(x,y), move(x,y,dx,dy), up(), tap(x,y), dbl(x,y), wheel(d), pinch(f) }
@@ -2617,6 +2785,48 @@ function modeMutate(eng){
   });
   save(); renderPanel(eng); flash(UI[eng].effects[fx].label + ' · mutated');
 }
+// v15: Mutate nudges the dials on the page you're looking at; Random (and Auto-change) gives the whole visualizer a new mix,
+// pulled toward its defaults so repeated randoms don't drift off to the extremes. Settings that only cost speed, the formula
+// presets and MilkDrop's on/off switches are left alone.
+const MUT_SKIP = new Set(['count', 'points', 'detail', 'n', 'grid', 'oct']), AUTO_SKIP = { box:['notes'] };
+function mutatePage(eng, fx, amt, anchor){
+  const sch = UI[eng] && UI[eng].effects[fx], v = S[eng] && S[eng].fx[fx]; if (!sch || !v) return;
+  sch.controls.forEach(c => {
+    if (c.t === 'range' && !c.keep && !MUT_SKIP.has(c.k) && typeof v[c.k] === 'number'){
+      const span = c.max - c.min, steps = Math.round(span/c.step), a = anchor && typeof anchor[c.k] === 'number' ? anchor[c.k] : null;
+      const x = (a === null ? v[c.k] : a + (v[c.k] - a)*0.5) + (Math.random()*2 - 1)*amt*span;
+      v[c.k] = +(c.min + Math.round(clamp((x - c.min)/span, 0, 1)*steps)*c.step).toFixed(4);
+    } else if (c.t === 'select' && c.k !== 'quality' && c.k !== 'preset' && c.o !== TRI && Math.random() < amt) v[c.k] = c.o[Math.floor(Math.random()*c.o.length)][0];
+  });
+}
+function dialsChanged(eng, fx){
+  save();
+  if (eng === 'milked'){ S.milkEd[S.preset] = S.milked.fx; save(); const tg = $('#milkEdTag'); if (tg) tg.textContent = 'edited · saved with this preset'; }
+  if (eng === 'avs'){ if (S.avs.preset){ S.avs.preset = ''; $('#avsPreset').value = ''; } compileFormulas(); AV.lutKey = ''; }
+  refreshFxList(eng); renderPanel(eng);
+}
+function dialsMutate(eng){
+  if (eng === 'hyper') return hyMutate();
+  if (eng === 'deep') return deepMutate();
+  const fx = $('#fxsel-' + eng).value; mutatePage(eng, fx, 0.35, null); dialsChanged(eng, fx); flash(UI[eng].effects[fx].label + ' · mutated');
+}
+function dialsReset(eng){
+  if (MODE_DEF[eng]) return modeReset(eng);
+  const fx = $('#fxsel-' + eng).value;
+  if (eng === 'avs'){
+    if (S.avs.preset && AVS_PRESETS[S.avs.preset]){ avsApply(AVS_PRESETS[S.avs.preset], S.avs.preset); flash('AVS · ' + S.avs.preset + ' · reset'); return; }
+    Object.assign(S.avs.fx[fx], AVS_DEF[fx]); dialsChanged('avs', fx); flash(UI.avs.effects[fx].label + ' · reset'); return; }
+  const DF = eng === 'reactor' ? RE_DEF : CL_DEF; S[eng].fx[fx] = Object.assign({}, DF[fx]); save(); refreshFxList(eng); renderPanel(eng); flash(UI[eng].effects[fx].label + ' · reset');
+}
+function randomizeAll(eng){
+  const DF = eng === 'reactor' ? RE_DEF : eng === 'classic' ? CL_DEF : MODE_DEF[eng], skip = AUTO_SKIP[eng] || [];
+  for (const fx in UI[eng].effects) if (!skip.includes(fx)) mutatePage(eng, fx, 0.3, DF[fx]);
+  save(); refreshFxList(eng); renderPanel(eng); flash(engName(eng) + ' · new mix');
+}
+function classicMode(d){ const order = ['analyzer', 'scope', 'both'], c = S.classic.fx.main; c.mode = order[((order.indexOf(c.mode) + d) % 3 + 3) % 3]; save(); renderPanel('classic'); flash('Classic · ' + c.mode); }
+// Auto-change: a new scene or preset (a new mix where there are none) on a timer or on strong beats. Any change by hand restarts the clock.
+function autoChange(){ lastSwitch = performance.now(); if ((MODE_UI[engine] && engine !== 'laser') || engine === 'classic' || engine === 'reactor') randomizeAll(engine); else randPreset(); }
+function autoTick(now){ const sec = +S.auto; if (!sec || now - lastSwitch < sec*1000) return; autoChange(); }
 function modeReset(eng){ const fx = $('#fxsel-'+eng).value; S[eng].fx[fx] = Object.assign({}, MODE_DEF[eng][fx]); save(); renderPanel(eng); flash(UI[eng].effects[fx].label + ' · reset'); }
 
 /* ---------- WebGL2 helpers ---------- */
@@ -3586,7 +3796,7 @@ function deepSize(force){
 function deepResetCam(){ D3.yaw = 0.6; D3.pitch = 0.25; D3.vyaw = D3.vpitch = 0; D3.lyaw = D3.lpitch = 0; D3.zoom = 1; }
 function deepSetScene(key){
   if (!D3_SCENES[key]) return;
-  S.deep.scene = key; save(); deepResetCam();
+  S.deep.scene = key; save(); deepResetCam(); lastSwitch = performance.now();
   const sel = $('#fxsel-deep'); if (sel.value !== key) sel.value = key;
   renderPanel('deep'); flash('3D Worlds · ' + D3_SCENES[key].label);
 }
@@ -3656,7 +3866,7 @@ function renderDeep(now, dt){
   const Dp = D3.disp, Du = Dp.u; gl.useProgram(Dp.p);
   glBindTex(gl, 0, D3.fb.tex, Du.uTex); gl.uniform2f(Du.uRes, D3.cw, D3.ch);
   gl.uniform1f(Du.uHue, (val('hue') + D3.hue)*Math.PI/180); gl.uniform1f(Du.uSat, val('sat')); gl.uniform1f(Du.uBright, val('bright')*(0.94 + 0.12*A.level + 0.08*A.kick));
-  gl.uniform1f(Du.uContrast, val('contrast')); gl.uniform1f(Du.uChroma, val('chroma')*(1 + 1.6*A.beat + 2*A.hat)); gl.uniform1f(Du.uVig, val('vig'));
+  gl.uniform1f(Du.uContrast, val('contrast')); gl.uniform1f(Du.uChroma, val('chroma')*(1 + 1.6*A.beat + 2*A.hat)); gl.uniform1f(Du.uVig, val('vig')); gl.uniform1f(Du.uExpo, D3_EXPO[S.deep.scene] || 1);
   glDraw(gl, Dp, null, D3.cw, D3.ch);
 }
 MODE_RT.deep = {
@@ -3674,16 +3884,366 @@ MODE_RT.deep = {
 };
 
 
+/* ================= Sound Weaver (v12): the music writes the lines ================= */
+// Three glowing pens fly a fixed distance ahead of you down a slowly winding tunnel and the music steers them. The bass
+// swells the first ribbon and leaves a bead of thickness on every kick; the melody (where the sound's brightness sits, the
+// spectral centroid) steers the second around you; the highs draw a fine third thread that twinkles on hats. Kicks sprout
+// branches that peel away, snares send rings down the tunnel. What a pen writes stays where it was written and the camera
+// flies through it, so the last seconds of the song are frozen into the walls. Canvas 2D: each ribbon is a strip of
+// quadratic curves with a smoothly varying width, drawn twice (soft glow, bright core) with additive blending.
+const WV = { ok:false, cv:$('#weave'), ctx:null, W:0, H:0, px:1, gen:0, camZ:0, lastZ:0, T:0, flare:0, hue:0,
+  pens:[], branches:[], rings:[], sparks:[], dust:[], lookX:0, lookY:0, drag:false,
+  bs:0, ms:0, hs:0, c:0.5, cl:0.5, bt:0, bp:0, slow:0 };
+const WV_NEAR = 30, WV_SP = 6;
+const WV_RIB = [   // per band: base angle (share of the symmetry step), radius and its swell, width and its swell, spiral rate
+  { base:0,    r0:88,  rk:70, w0:2.2, wk:8, tw:0.16, twk:0.55, dir:1,  glow:1 },
+  { base:0.5,  r0:122, rk:45, w0:1.3, wk:6, tw:0.11, twk:0.4,  dir:-1, glow:1 },
+  { base:0.27, r0:158, rk:30, w0:1,   wk:3, tw:0.28, twk:0.7,  dir:1,  glow:0 }];
+const WV_SHOW = { three:[1, 1, 1], two:[1, 1, 0], bass:[1, 0, 0], melody:[0, 1, 0] };
+function initWeave(){
+  if (WV.ok) return true;
+  WV.ctx = WV.cv.getContext('2d'); if (!WV.ctx) return false;
+  WV.ok = true; wvSize();
+  WV.pens = WV_RIB.map(d => ({ d, th:0, th1:0, r:d.r0, r1:d.r0, tw:0, pts:[], w:d.w0, wh:0, col:[200, 200, 255], a:0.5, on:true }));
+  for (let i=0;i<70;i++) WV.dust.push({ z:600 + Math.random()*900, th:Math.random()*TAU, r:60 + Math.random()*260 });
+  for (let i=0;i<330;i++) wvStep(1/60, false);   // fly a few seconds first so the tunnel is already full
+  return true;
+}
+function wvSize(){
+  if (WV.gen === RGEN && WV.W) return; WV.gen = RGEN;
+  const r = stageRect(), d0 = Math.min(window.devicePixelRatio || 1, 1.5), cap = PC_CLASS ? 2200 : 1500, d = d0*Math.min(1, cap/Math.hypot(r.w*d0, r.h*d0));
+  const W = Math.max(16, Math.round(r.w*d)), H = Math.max(16, Math.round(r.h*d));
+  WV.px = W/Math.max(1, r.w);
+  if (W === WV.W && H === WV.H) return;
+  WV.cv.width = W; WV.cv.height = H; WV.W = W; WV.H = H;
+}
+// the tunnel's centre line wanders with depth, so far parts of it bend away as you fly
+function wvPath(z, k){ return [k*(110*Math.sin(z*0.0016) + 45*Math.sin(z*0.0037 + 1)), k*(75*Math.sin(z*0.0021 + 2) + 32*Math.sin(z*0.0043))]; }
+// ribbon colour, 0–255: Neon gives each band its own hue, the palettes spread the three bands across the palette
+function wvColor(i, L, kick, neonH){
+  if (L.pal === 'neon'){
+    const h = i === 0 ? (270 + 40*kick)/360 + neonH : i === 1 ? (168 + 90*WV.c)/360 + neonH : 44/360 + neonH*0.3;
+    const c = hsvRGB(h, i === 2 ? 0.7 : 0.85, i === 2 ? 1 : 0.95);
+    return c.map(v => Math.round(Math.min(1, v + kick*0.3*(1 - v))*255));
+  }
+  const c = palRGB(L.pal, i*0.33 + WV.hue + (i === 1 ? (WV.c - 0.5)*0.3 : 0) + (i === 0 ? kick*0.08 : 0));
+  return c.map(v => Math.round(Math.min(1, v + kick*0.3*(1 - v))*255));
+}
+function wvStep(sec, live){
+  const F = S.weave.fx, fl = F.flight, mu = F.music, L = F.look;
+  const K = clamp(fl.sym|0, 1, 8), st = TAU/K, HEAD = fl.ahead, g = 1 - Math.exp(-sec/(0.03 + fl.glide*0.045));
+  WV.T += sec; WV.camZ += fl.speed*sec; WV.hue = (WV.hue + L.hueSpeed/360*sec) % 1;
+  // listening: slow swells per band, the melody's pitch (spectral centroid, ~190 Hz to 9 kHz) and the drum hits
+  const k2 = 1 - Math.exp(-sec/0.6), k3 = 1 - Math.exp(-sec/0.9), k4 = 1 - Math.exp(-sec/6);
+  WV.bs += (A.bass - WV.bs)*k2; WV.ms += (A.mid - WV.ms)*k2; WV.hs += (A.treb - WV.hs)*k2;
+  let cs = 0, cw = 0; for (let i=20;i<70;i++){ const v = specBuf[i]; cs += i*v; cw += v; }
+  if (cw > 0.5) WV.c += ((cs/cw - 20)/50 - WV.c)*k3;
+  WV.cl += (WV.c - WV.cl)*k4;
+  const kick = live ? bandHit(0) : 0, snare = live ? bandHit(1) : 0, hat = live ? bandHit(2) : 0;
+  WV.bt = Math.max(WV.bt*Math.exp(-sec/0.22), kick > 0 ? Math.min(1, 0.35 + kick*0.65) : 0);
+  WV.bp += (WV.bt - WV.bp)*(1 - Math.exp(-sec/0.05));
+  const bead = WV.bp*mu.beads, steer = (WV.c - WV.cl)*6*mu.steer*Math.min(1, S.motion), neonH = Math.sin(WV.T*0.045)*L.hueSpeed*4/360;
+  const show = WV_SHOW[L.ribbons] || WV_SHOW.three, band = [A.bass, A.mid, A.treb], slow = [WV.bs, WV.ms, WV.hs];
+  WV.pens.forEach((p, i) => {
+    const d = p.d, lv = Math.min(slow[i], 1.3), now = Math.min(band[i], 1.3);
+    p.tw += d.dir*sec*(d.tw + d.twk*lv)*fl.twist;
+    const tth = d.base*st + p.tw + (i === 1 ? steer : 0), tr = d.r0 + d.rk*lv*mu.swell;
+    p.th1 += (tth - p.th1)*g; p.th += (p.th1 - p.th)*g; p.r1 += (tr - p.r1)*g; p.r += (p.r1 - p.r)*g;
+    p.w = (d.w0 + d.wk*(i === 0 ? 0.7*bead + 0.3*now : now))*L.width; p.wh = Math.max(p.wh, p.w);
+    p.col = wvColor(i, L, i === 0 ? Math.min(1, bead) : 0, neonH); p.a = 0.4 + 0.38*Math.min(1, now*1.4); p.on = !!show[i];
+  });
+  // kicks sprout branches that peel away from the bass ribbon and fade out
+  const par = WV.pens[0];
+  for (const q of WV.branches){ q.age += sec; q.th += q.sgn*0.85*Math.min(1, q.age/0.9)*sec; q.r += (par.r + 55 - q.r)*(1 - Math.exp(-sec/1.2));
+    const taper = Math.min(1, q.age/0.3)*Math.max(0, Math.min(1, (q.life - q.age)/0.9));
+    q.w = par.w*taper*0.6; q.wh = Math.max(q.wh, q.w); q.col = par.col; q.a = par.a*0.75*Math.max(0.15, taper); }
+  if (kick > 0){ WV.flare = 1;
+    if (show[0] && WV.branches.filter(q => q.age < q.life).length < (mu.branches|0))
+      WV.branches.push({ th:par.th, r:par.r, sgn:Math.random() < 0.5 ? -1 : 1, age:0, life:2.6 + Math.random()*1.6, pts:[], w:0, wh:0, col:par.col, a:par.a }); }
+  WV.flare *= Math.exp(-sec/0.15);
+  const zh = WV.camZ + HEAD;
+  if (snare > 0 && mu.rings > 0.01){ const m = WV.pens[show[1] ? 1 : 0], [cx0, cy0] = wvPath(zh, fl.bend); WV.rings.push({ z:zh, R:m.r*1.18, col:m.col, a:Math.min(1, mu.rings*0.6), cx0, cy0 }); }
+  if (hat > 0 && mu.shimmer > 0.01){ const h = WV.pens[show[2] ? 2 : show[1] ? 1 : 0], [cx0, cy0] = wvPath(zh, fl.bend), n = Math.max(1, Math.round(2*mu.shimmer));
+    for (let j=0;j<n && WV.sparks.length < 500;j++) WV.sparks.push({ z:zh - Math.random()*8, th:h.th + (Math.random() - 0.5)*0.25, r:h.r*(0.94 + Math.random()*0.14), cx0, cy0, ph:Math.random()*TAU, a:Math.min(1, 0.5 + mu.shimmer*0.3) }); }
+  // what the pens write stays where it was written
+  if (WV.camZ - WV.lastZ >= WV_SP){ WV.lastZ = WV.camZ; const [cx0, cy0] = wvPath(zh, fl.bend);
+    for (const p of WV.pens){ if (p.on) p.pts.push({ z:zh, th:p.th, r:p.r, w:p.wh, col:p.col, a:p.a, cx0, cy0 }); p.wh = 0; }
+    for (const q of WV.branches){ if (q.age < q.life) q.pts.push({ z:zh, th:q.th, r:q.r, w:q.wh, col:q.col, a:q.a, cx0, cy0 }); q.wh = 0; } }
+  const zmin = WV.camZ + WV_NEAR;
+  for (const p of WV.pens) while (p.pts.length && p.pts[0].z < zmin) p.pts.shift();
+  for (const q of WV.branches) while (q.pts.length && q.pts[0].z < zmin) q.pts.shift();
+  WV.branches = WV.branches.filter(q => q.age < q.life || q.pts.length);
+  WV.rings = WV.rings.filter(q => q.z > zmin); WV.sparks = WV.sparks.filter(q => q.z > zmin);
+  for (const q of WV.dust) if (q.z < zmin){ q.z = WV.camZ + 700 + Math.random()*700; q.th = Math.random()*TAU; q.r = 60 + Math.random()*260; }
+}
+function wvDraw(){
+  const F = S.weave.fx, fl = F.flight, L = F.look, c = WV.ctx, w = WV.W, h = WV.H, px = WV.px;
+  const K = clamp(fl.sym|0, 1, 8), st = TAU/K, HEAD = fl.ahead, f = Math.min(w, h)*0.95;
+  const CX = w/2 + WV.lookX*w*0.35, CY = h/2 + WV.lookY*h*0.35;
+  c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(6,7,12,' + (1 - clamp(L.blur, 0, 0.9)*0.9).toFixed(3) + ')'; c.fillRect(0, 0, w, h);
+  c.globalCompositeOperation = 'lighter';
+  const [camX, camY] = wvPath(WV.camZ + 60, fl.bend), roll = 0.45*fl.roll*Math.sin(WV.T*0.06);
+  const near = dz => Math.min(1, Math.max(0, (dz - WV_NEAR)/140)), lvl = Math.min(1, (A.bass + A.mid + A.treb)*0.8);
+  const rgba = (col, a) => 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + a.toFixed(3) + ')';
+  if (L.stars > 0.01) for (const q of WV.dust){ const dz = q.z - WV.camZ, s = f/dz, a = L.stars*(0.25 + 0.5*lvl)*Math.min(1, (1500 - dz)/600)*near(dz); if (a <= 0.01) continue;
+    const sz = Math.min(2.5*px, Math.max(px, 0.7*s)); c.fillStyle = 'rgba(190,205,255,' + a.toFixed(3) + ')'; c.fillRect(CX + Math.cos(q.th + roll)*q.r*s, CY + Math.sin(q.th + roll)*q.r*s, sz, sz); }
+  for (const q of WV.rings){ const dz = q.z - WV.camZ, s = f/dz, a = 0.3*q.a*near(dz); if (a <= 0.01) continue;
+    c.strokeStyle = rgba(q.col, a); c.lineWidth = Math.max(0.6*px, Math.min(8*px, 0.6*s)); c.beginPath(); c.arc(CX + (q.cx0 - camX)*s, CY + (q.cy0 - camY)*s, q.R*s, 0, TAU); c.stroke(); }
+  const glowA = L.glow*0.27, budget = WV.slow > 22 ? 0 : WV.slow > 15 ? 1 : 2;   // drop glow passes if the device can't keep up
+  const Lx = new Float32Array(4), Ly = new Float32Array(4), Rx = new Float32Array(4), Ry = new Float32Array(4);
+  const strand = (pts, hp, ro, glow) => {
+    const all = hp ? pts.concat([hp]) : pts, n = all.length - 1; if (n < 1) return;
+    const X = new Float32Array(n + 1), Y = new Float32Array(n + 1), Wd = new Float32Array(n + 1);
+    for (let i=0;i<=n;i++){ const p = all[i], s = f/(p.z - WV.camZ), a = p.th + ro; X[i] = CX + (p.cx0 + Math.cos(a)*p.r - camX)*s; Y[i] = CY + (p.cy0 + Math.sin(a)*p.r - camY)*s; Wd[i] = Math.min(36*px, Math.max(0.7*px, p.w*s*0.5)); }
+    for (let i=1;i<=n;i++){ const p = all[i], fa = near(p.z - WV.camZ)*p.a; if (fa < 0.01) continue;
+      const last = i === n, x0 = (X[i-1] + X[i])/2, y0 = (Y[i-1] + Y[i])/2, w0 = (Wd[i-1] + Wd[i])/2, x2 = last ? X[i] : (X[i] + X[i+1])/2, y2 = last ? Y[i] : (Y[i] + Y[i+1])/2, w2 = last ? Wd[i] : (Wd[i] + Wd[i+1])/2;
+      const cx = last ? (x0 + x2)/2 : X[i], cy = last ? (y0 + y2)/2 : Y[i];
+      if ((x0 < -300 && x2 < -300) || (x0 > w + 300 && x2 > w + 300) || (y0 < -300 && y2 < -300) || (y0 > h + 300 && y2 > h + 300)) continue;
+      for (let pass = glow && glowA > 0.005 ? 0 : 1; pass < 2; pass++){ const m = pass ? 0.5 : 1.45;
+        for (let j=0;j<4;j++){ const t = j/3, mt = 1 - t, qx = mt*mt*x0 + 2*mt*t*cx + t*t*x2, qy = mt*mt*y0 + 2*mt*t*cy + t*t*y2;
+          let tx = mt*(cx - x0) + t*(x2 - cx), ty = mt*(cy - y0) + t*(y2 - cy); const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+          const ww = (mt*w0 + t*w2)*m; Lx[j] = qx - ty*ww; Ly[j] = qy + tx*ww; Rx[j] = qx + ty*ww; Ry[j] = qy - tx*ww; }
+        c.fillStyle = rgba(p.col, pass ? fa : fa*glowA); c.beginPath(); c.moveTo(Lx[0], Ly[0]); for (let j=1;j<4;j++) c.lineTo(Lx[j], Ly[j]); for (let j=3;j>=0;j--) c.lineTo(Rx[j], Ry[j]); c.closePath(); c.fill(); } }
+  };
+  const zh = WV.camZ + HEAD, [hx0, hy0] = wvPath(zh, fl.bend), sh = f/HEAD;
+  for (let k=0;k<K;k++){ const ro = k*st + roll;
+    for (const q of WV.branches) strand(q.pts, q.age < q.life ? { z:zh, th:q.th, r:q.r, w:q.w, col:q.col, a:q.a, cx0:hx0, cy0:hy0 } : null, ro, budget > 1);
+    for (const p of WV.pens) strand(p.pts, p.on ? { z:zh, th:p.th, r:p.r, w:p.w, col:p.col, a:p.a, cx0:hx0, cy0:hy0 } : null, ro, p.d.glow && budget > 0);
+    WV.pens.forEach((p, i) => { if (!p.on) return;
+      const x = CX + (hx0 + Math.cos(p.th + ro)*p.r - camX)*sh, y = CY + (hy0 + Math.sin(p.th + ro)*p.r - camY)*sh, rr = Math.max(1.2*px, (1.2 + p.w*0.35)*sh*0.5*(1 + (i === 0 ? WV.flare*0.8 : 0)));
+      c.fillStyle = rgba(p.col, 0.12); c.beginPath(); c.arc(x, y, rr*2.4, 0, TAU); c.fill();
+      c.fillStyle = rgba(p.col.map(v => Math.round(v + (255 - v)*0.6)), 0.9); c.beginPath(); c.arc(x, y, rr, 0, TAU); c.fill(); });
+    for (const q of WV.sparks){ const dz = q.z - WV.camZ, s = f/dz, a = near(dz)*q.a*(0.55 + 0.45*Math.sin(q.ph + WV.T*16)); if (a <= 0.02) continue; const a2 = q.th + ro;
+      c.fillStyle = 'rgba(255,240,190,' + a.toFixed(3) + ')'; c.beginPath(); c.arc(CX + (q.cx0 + Math.cos(a2)*q.r - camX)*s, CY + (q.cy0 + Math.sin(a2)*q.r - camY)*s, Math.max(0.8*px, 0.65*s), 0, TAU); c.fill(); }
+  }
+  c.globalCompositeOperation = 'source-over';
+}
+function renderWeave(now, dt){
+  if (!WV.ok) return; wvSize();
+  const sec = Math.min(0.05, dt/60), t0 = performance.now();
+  if (!WV.drag){ const k = Math.exp(-sec/2.5); WV.lookX *= k; WV.lookY *= k; }
+  wvStep(sec, true); wvDraw();
+  WV.slow = WV.slow*0.95 + (performance.now() - t0)*0.05;
+}
+MODE_RT.weave = {
+  down(){ WV.drag = true; }, up(){ WV.drag = false; },
+  move(x, y, dx, dy){ WV.lookX = clamp(WV.lookX + dx*0.0025, -1, 1); WV.lookY = clamp(WV.lookY + dy*0.0025, -1, 1); },
+  wheel(d){ const fl = S.weave.fx.flight; setDial('weave', 'flight', 'speed', Math.round(clamp(fl.speed*Math.exp(-d*0.0012), 10, 240))); },
+  pinch(f){ const fl = S.weave.fx.flight; setDial('weave', 'flight', 'speed', Math.round(clamp(fl.speed*f, 10, 240))); },
+  dbl(){ WV.lookX = WV.lookY = 0; flash('Sound Weaver · view centred'); }
+};
+
+/* ================= Music Box (v14): every note draws its own line ================= */
+// A slowly turning drum seen from just above. A small pitch tracker listens for the notes that are actually playing and
+// each one is written onto the drum at the playhead facing you: at its own height (pitch: low at the bottom, high at the
+// top) and in its own colour (pitch class). Held notes become long arcs, melodies step or glide between heights, chords
+// stack up as parallel lines, and the drum keeps turning so the last few bars wrap around it and fade. Kicks draw faint bar
+// lines, hats sparkle at the playhead. Loudness only sets how bright a line is, never where it goes.
+// Pitch tracker. Two spectra of the same sound: a long one (8192 points: ≈5.4 Hz bins over 0.19 s) for low and middle
+// partials and a short one (2048 points, 0.05 s) above 1.5 kHz, where quick notes need speed more than fine bins. In each,
+// the peaks standing clearly above the local noise floor are found to a fraction of a bin. Every note E1–E7 is scored by how
+// many of its first eight partials line up with those peaks (its pitch refined from its own fundamental first, so chance
+// peaks rarely line up), and the strongest notes are taken one at a time, each removing the peaks it explains so that its
+// overtones don't come back as notes of their own. A note has to be heard twice in a row to start a line. Tuned offline on
+// five test pieces with known notes (synth house, trance, piano, flute with vibrato, dense EDM).
+const PT = { an:null, an2:null, B:null, B2:null, hz:0, hz2:0, k1:0, k2:0, pre:null, pf:null, pa:null, pa0:null, pdb:null, np:0,
+  match:null, ok:null, sal:null, mw:null, gH:null, f0:null, pend:new Map(), top:0 };
+const PT_LO = 28, PT_HI = 100, PT_N = PT_HI - PT_LO + 1, PT_H = 8, PT_HC = 12, PT_SPLIT = 1500, PT_FMAX = 5200;
+const BOX_RANGE = { wide:[28, 100], mid:[36, 84], tight:[48, 84] };
+function ptInit(){
+  if (PT.an) return true;
+  if (!actx || !bus) return false;
+  try {
+    const mk = n => { const an = actx.createAnalyser(); an.fftSize = n; an.smoothingTimeConstant = 0; an.minDecibels = -140; an.maxDecibels = 0; bus.connect(an); return an; };
+    PT.an = mk(8192); PT.an2 = mk(2048);
+    PT.B = new Float32Array(PT.an.frequencyBinCount); PT.B2 = new Float32Array(PT.an2.frequencyBinCount);
+    PT.hz = actx.sampleRate/8192; PT.hz2 = actx.sampleRate/2048;
+    PT.k1 = Math.min(4094, Math.ceil(PT_FMAX/PT.hz) + 2); PT.k2 = Math.min(1022, Math.ceil(PT_FMAX/PT.hz2) + 2);
+    PT.pre = new Float64Array(PT.k1 + 3); PT.pf = new Float64Array(600); PT.pa = new Float64Array(600); PT.pa0 = new Float64Array(600); PT.pdb = new Float64Array(600);
+    PT.match = new Int32Array(PT_N*(PT_HC + 1)); PT.ok = new Uint8Array(PT_N); PT.sal = new Float64Array(PT_N); PT.mw = new Float64Array(PT_HC + 2);
+    PT.gH = new Float64Array(PT_HC + 1); for (let h=1;h<=PT_HC;h++) PT.gH[h] = 1/Math.sqrt(h);
+    PT.f0 = new Float64Array(PT_N); for (let i=0;i<PT_N;i++) PT.f0[i] = 440*Math.pow(2, (PT_LO + i - 69)/12);
+  } catch(e){ PT.an = null; return false; }
+  return true;
+}
+// the peaks of one spectrum between fLo and fHi: frequency, height over the local floor (as a ratio, and in dB)
+function ptPeaks(B, hz, kmax, fLo, fHi){
+  const pre = PT.pre; pre[0] = 0;
+  for (let k=0;k<=kmax + 1;k++) pre[k + 1] = pre[k] + Math.max(B[k], -140);
+  let gmax = -999; for (let k=2;k<=kmax;k++) if (B[k] > gmax) gmax = B[k];
+  const kLo = Math.max(2, Math.floor(fLo/hz)), kHi = Math.min(kmax, Math.ceil(fHi/hz));
+  for (let k=kLo;k<=kHi;k++){ const b = B[k]; if (!(b > B[k - 1] && b >= B[k + 1])) continue;
+    const R = Math.max(12, Math.round(k*0.3)), lo = Math.max(0, k - R), hi = Math.min(kmax + 1, k + R), prom = b - (pre[hi + 1] - pre[lo])/(hi - lo + 1);
+    if (prom < 9 || b < gmax - 60 || b < -110) continue;           // 9 dB over the floor keeps noise (hats, claps) out
+    const a = B[k - 1], c = B[k + 1], den = a - 2*b + c, d = den < 0 ? clamp(0.5*(a - c)/den, -0.5, 0.5) : 0, f = (k + d)*hz;
+    if (f < fLo || f >= fHi || PT.np >= PT.pf.length) continue;
+    PT.pf[PT.np] = f; PT.pa[PT.np] = Math.pow(10, prom/20); PT.pdb[PT.np] = prom; PT.np++; }
+  return gmax;
+}
+// the strongest peak within ±tol Hz of f (peaks are in frequency order)
+function ptFind(f, tol){
+  const pf = PT.pf, np = PT.np; let lo = 0, hi = np;
+  while (lo < hi){ const mid = (lo + hi) >> 1; if (pf[mid] < f - tol) lo = mid + 1; else hi = mid; }
+  let best = -1, bw = 0; for (let i=lo;i<np && pf[i] <= f + tol;i++){ const dv = (pf[i] - f)/tol, w = PT.pa0[i]*(1 - 0.5*dv*dv); if (w > bw){ bw = w; best = i; } }
+  return best;
+}
+// The notes sounding right now, strongest first: [{ m: MIDI note number, s: strength 0.25–1 }]
+function ptDetect(maxN, sens){
+  PT.an.getFloatFrequencyData(PT.B); PT.an2.getFloatFrequencyData(PT.B2); PT.np = 0;
+  const g = Math.max(ptPeaks(PT.B, PT.hz, PT.k1, 20, PT_SPLIT), ptPeaks(PT.B2, PT.hz2, PT.k2, PT_SPLIT, PT_FMAX));
+  if (g < -75 || !PT.np){ PT.top = 0; return []; }                 // below about -75 dBFS: silence
+  const { pf, pa, pa0, pdb, match, ok, sal, mw, gH, f0 } = PT, R1 = PT_HC + 1, np = PT.np, bin = f => f >= PT_SPLIT ? PT.hz2 : PT.hz;
+  const c50 = Math.pow(2, 50/1200) - 1, c30 = Math.pow(2, 30/1200) - 1;
+  for (let j=0;j<np;j++) pa0[j] = pa[j];
+  // line every note's partials up with the peaks once: its own fundamental (or 2nd partial) fixes its exact pitch, the
+  // rest must sit within 30 cents of that pitch's multiples; a note whose pitch rounds to a neighbour leaves it to the neighbour
+  for (let i=0;i<PT_N;i++){ const fi = f0[i], o = i*R1; let est = fi, known = false;
+    const j1 = ptFind(fi, Math.max(fi*c50, 0.7*bin(fi)));
+    if (j1 >= 0){ est = pf[j1]; known = true; }
+    else if (2*fi <= PT_FMAX){ const j2 = ptFind(2*fi, Math.max(2*fi*c50, 0.7*bin(2*fi))); if (j2 >= 0){ est = pf[j2]/2; known = true; } }
+    ok[i] = Math.round(69 + 12*Math.log2(est/440)) === PT_LO + i ? 1 : 0; match[o + 1] = j1;
+    let acc = j1 >= 0 ? pf[j1] : 0, wsum = j1 >= 0 ? 1 : 0;
+    for (let h=2;h<=PT_HC;h++){ const fh = est*h; if (fh > PT_FMAX){ match[o + h] = -2; continue; }
+      const j = ptFind(fh, known ? Math.max(fh*c30, 0.5*bin(fh)) : Math.max(fh*c50, 0.7*bin(fh))); match[o + h] = j;
+      if (j >= 0){ acc += pf[j]; wsum += h; est = acc/wsum; known = true; } } }
+  const out = []; let first = 0;
+  for (let it=0; it<maxN; it++){
+    let bi = -1, bv = 0;
+    for (let i=0;i<PT_N;i++){ if (!ok[i]){ sal[i] = 0; continue; }
+      let s = 0, gs = 0, p1 = 0, cnt = 0, solo = 0;
+      for (let h=1;h<=PT_H;h++){ const j = match[i*R1 + h]; if (j === -2) break; gs += gH[h];
+        if (j >= 0 && pa[j] > 0){ const w = Math.pow(pa[j], 0.25); s += w*gH[h]; cnt++; if (h === 1) p1 = w; if (pdb[j] > solo) solo = pdb[j]; } }
+      if (!cnt){ sal[i] = 0; continue; }
+      s /= Math.sqrt(gs);
+      if (p1 <= 0) s *= 0.3;                                          // nothing at the fundamental: likely a ghost of another note
+      if (cnt === 1 && solo < 14) s *= 0.25;                          // one weak peak alone is more likely noise than a note
+      sal[i] = s; if (s > bv){ bv = s; bi = i; } }
+    if (!it) first = bv;
+    if (bi < 0 || bv < Math.max(2/sens, first*0.3)) break;
+    out.push({ m:bi + PT_LO, s:clamp((bv - 1.2)/5, 0.25, 1) });
+    // take away what this note explains: every peak on its partials
+    for (let h=1;h<=PT_HC;h++){ const j = match[bi*R1 + h]; if (j === -2) break; if (j >= 0) pa[j] = 0; }
+  }
+  PT.top = first;
+  return out;
+}
+
+const BX = { ok:false, cv:$('#box'), ctx:null, W:0, H:0, px:1, gen:0, T:0, ang:0, lastDet:-1, voices:[], segs:[], marks:[], sparks:[], yaw:0, pitch:0, drag:false, slow:0 };
+function initBox(){
+  if (BX.ok) return true;
+  BX.ctx = BX.cv.getContext('2d'); if (!BX.ctx) return false;
+  BX.ok = true; bxSize(); return true;
+}
+function bxSize(){
+  if (BX.gen === RGEN && BX.W) return; BX.gen = RGEN;
+  const r = stageRect(), d0 = Math.min(window.devicePixelRatio || 1, 1.5), cap = PC_CLASS ? 2200 : 1500, d = d0*Math.min(1, cap/Math.hypot(r.w*d0, r.h*d0));
+  const W = Math.max(16, Math.round(r.w*d)), H = Math.max(16, Math.round(r.h*d));
+  BX.px = W/Math.max(1, r.w);
+  if (W === BX.W && H === BX.H) return;
+  BX.cv.width = W; BX.cv.height = H; BX.W = W; BX.H = H;
+}
+// note colour, 0–255: by pitch class (circle of fifths puts notes that sound good together side by side), higher octaves brighter
+function bxColor(m, L){
+  const pc = ((m % 12) + 12) % 12, v = 0.78 + 0.22*clamp((m - 36)/48, 0, 1);
+  const c = L.colors === 'fifths' ? hsvRGB(((pc*7) % 12)/12, 0.7, v) : L.colors === 'chromatic' ? hsvRGB(pc/12, 0.7, v) : palRGB(L.colors, pc/12).map(x => x*v);
+  return c.map(x => Math.round(clamp(x, 0, 1)*255));
+}
+function bxSeg(v, col, from){ const sg = { pts:from ? [from] : [], col, end:0 }; BX.segs.push(sg); v.seg = sg; }
+function bxTrack(det, F){
+  const N = F.notes, now = BX.T, maxV = clamp(N.voices|0, 1, 6), hold = 0.06 + N.sustain*0.5, used = det.map(() => false);
+  for (const v of BX.voices){ const i = det.findIndex((d, j) => !used[j] && d.m === v.m); if (i >= 0){ used[i] = true; v.seen = now; v.s += (det[i].s - v.s)*0.4; } }
+  // a line that just lost its note moves on to an unclaimed note close by (a melody), instead of ending
+  for (const v of BX.voices){ if (v.seen === now || now - v.seen > 0.25) continue;
+    let bi = -1, bd = 4; det.forEach((d, j) => { if (used[j]) return; const dd = Math.abs(d.m - v.m); if (dd <= 3 && dd < bd){ bd = dd; bi = j; } });
+    if (bi >= 0){ used[bi] = true; v.m = det[bi].m; v.seen = now; v.s = det[bi].s; v.moved = true; } }
+  // a new note starts a line once it has been heard twice in a row
+  const heard = new Set();
+  det.forEach((d, j) => { if (used[j]) return; heard.add(d.m); const n = (PT.pend.get(d.m) || 0) + 1; PT.pend.set(d.m, n);
+    if (n >= 2 && BX.voices.length < maxV){ BX.voices.push({ m:d.m, y:d.m, s:d.s, seen:now, seg:null, moved:false, col:null }); PT.pend.delete(d.m); } });
+  for (const k of [...PT.pend.keys()]) if (!heard.has(k)) PT.pend.delete(k);
+  BX.voices = BX.voices.filter(v => { if (now - v.seen <= hold) return true; if (v.seg) v.seg.end = now; return false; });
+}
+function bxStep(sec){
+  const F = S.box.fx, N = F.notes, Mo = F.motion, L = F.look;
+  BX.T += sec; BX.ang += sec*TAU/Math.max(2, Mo.loop);
+  if (!BX.drag){ const k = Math.exp(-sec/8); BX.yaw *= k; BX.pitch *= k; }
+  if (ptInit() && BX.T - BX.lastDet >= 0.03){ BX.lastDet = BX.T; bxTrack(ptDetect(clamp(N.voices|0, 1, 6) + 2, N.sens), F); }
+  const g = 1 - Math.exp(-sec/(0.012 + N.glide*0.14));
+  for (const v of BX.voices){
+    v.y += (v.m - v.y)*g;
+    const col = bxColor(v.m, L), last = v.seg && v.seg.pts[v.seg.pts.length - 1];
+    if (!v.seg) bxSeg(v, col, null);
+    else if (v.moved || col.join() !== v.seg.col.join()){ v.seg.end = BX.T; bxSeg(v, col, last); v.moved = false; }   // new note: new colour, line continues
+    const pl = v.seg.pts[v.seg.pts.length - 1];
+    if (!pl || BX.ang - pl.a > 0.006 || Math.abs(v.y - pl.y) > 0.04) v.seg.pts.push({ a:BX.ang, y:v.y, w:0.55 + 0.45*v.s, t:BX.T });
+  }
+  const kick = bandHit(0), hat = bandHit(2), life = Math.max(1, Mo.loop*Mo.history);
+  if (kick > 0 && L.bars > 0.01) BX.marks.push({ a:BX.ang, t:BX.T, s:Math.min(1, 0.4 + kick*0.6) });
+  if (hat > 0 && L.sparkle > 0.01){ const [lo, hi] = BOX_RANGE[N.range] || BOX_RANGE.wide;
+    for (let i=0;i<3 && BX.sparks.length < 200;i++) BX.sparks.push({ a:BX.ang - Math.random()*0.05, m:lo + Math.random()*(hi - lo), t:BX.T, ph:Math.random()*TAU }); }
+  for (const sg of BX.segs) while (sg.pts.length > 1 && BX.T - sg.pts[0].t > life) sg.pts.shift();
+  BX.segs = BX.segs.filter(sg => sg.pts.length && (!sg.end || BX.T - sg.pts[sg.pts.length - 1].t < life));
+  BX.marks = BX.marks.filter(q => BX.T - q.t < life); BX.sparks = BX.sparks.filter(q => BX.T - q.t < 0.7);
+}
+function bxDraw(){
+  const F = S.box.fx, N = F.notes, Mo = F.motion, L = F.look, c = BX.ctx, w = BX.W, h = BX.H, px = BX.px;
+  const [lo, hi] = BOX_RANGE[N.range] || BOX_RANGE.wide, Hh = 0.8*clamp(h/w*0.7, 1, 1.3), life = Math.max(1, Mo.loop*Mo.history);   // a taller drum on a portrait screen
+  const el = clamp(Mo.tilt + BX.pitch + Mo.sway*0.07*Math.sin(BX.T*0.11), -0.25, 1.45), yaw0 = BX.yaw + Mo.sway*0.3*Math.sin(BX.T*0.07);
+  const ce = Math.cos(el), se = Math.sin(el), Dc = 3.4/clamp(Mo.zoom, 0.3, 3), f = Math.min(w, h)*1.15, CX = w/2, CY = h/2;
+  const Y = m => ((m - lo)/(hi - lo)*2 - 1)*Hh;
+  const P = (phi, y) => { const x = Math.sin(phi + yaw0), z = Math.cos(phi + yaw0), yc = y*ce - z*se, zc = y*se + z*ce, d = Dc - zc; return [CX + x*f/d, CY - yc*f/d, f/d, z]; };
+  const fog = z => 0.28 + 0.72*(z*0.5 + 0.5);
+  c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(5,6,10,0.5)'; c.fillRect(0, 0, w, h);
+  c.globalCompositeOperation = 'lighter'; c.lineCap = 'round'; c.lineJoin = 'round';
+  // the drum: rims and a faint ring at every C, front half brighter than the back
+  const ring = (y, a) => { for (let half=0;half<2;half++){ const p = new Path2D(); for (let i=0;i<=24;i++){ const phi = (half ? Math.PI : 0) - Math.PI/2 + i/24*Math.PI - yaw0, q = P(phi, y); if (i) p.lineTo(q[0], q[1]); else p.moveTo(q[0], q[1]); }
+    c.strokeStyle = 'rgba(150,170,220,' + (a*(half ? 0.35 : 1)).toFixed(3) + ')'; c.lineWidth = Math.max(px, 1.2*px); c.stroke(p); } };
+  ring(-Hh, 0.18); ring(Hh, 0.18);
+  if (L.grid > 0.01) for (let m=Math.ceil(lo/12)*12; m<=hi; m+=12) ring(Y(m), 0.1*L.grid);
+  // bar lines from the kicks
+  for (const q of BX.marks){ const phi = q.a - BX.ang, a = q.s*L.bars*0.35*Math.max(0, 1 - (BX.T - q.t)/life), b = P(phi, -Hh), t = P(phi, Hh); if (a < 0.01) continue;
+    c.strokeStyle = 'rgba(200,210,255,' + (a*fog(b[3])).toFixed(3) + ')'; c.lineWidth = Math.max(px, 1.4*px*b[2]/300); c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke(); }
+  // the notes: each segment in chunks, each chunk with its own depth fade and width
+  const t0 = performance.now(), cheap = BX.slow > 14;
+  for (const sg of BX.segs){ const pts = sg.pts, rgb = sg.col[0] + ',' + sg.col[1] + ',' + sg.col[2]; if (pts.length < 2) continue;
+    for (let i0=0;i0<pts.length - 1;i0+=16){ const i1 = Math.min(pts.length - 1, i0 + 16), mid = pts[(i0 + i1) >> 1];
+      const fa = Math.max(0, 1 - (BX.T - mid.t)/life); if (fa <= 0.01) continue;
+      const qm = P(mid.a - BX.ang, Y(mid.y)), al = fa*fa*fog(qm[3])*(0.5 + 0.5*mid.w), lw = Math.max(0.8*px, 0.011*mid.w*L.width*qm[2]);
+      const path = new Path2D(); for (let i=i0;i<=i1;i++){ const p = pts[i], q = P(p.a - BX.ang, Y(p.y)); if (i === i0) path.moveTo(q[0], q[1]); else path.lineTo(q[0], q[1]); }
+      if (L.glow > 0.01 && !cheap){ c.strokeStyle = 'rgba(' + rgb + ',' + (al*0.22*L.glow).toFixed(3) + ')'; c.lineWidth = lw*3.6; c.stroke(path); }
+      c.strokeStyle = 'rgba(' + rgb + ',' + al.toFixed(3) + ')'; c.lineWidth = lw; c.stroke(path); } }
+  // the playhead and the notes sounding on it
+  { const b = P(0, -Hh), t = P(0, Hh); c.strokeStyle = 'rgba(230,236,255,0.22)'; c.lineWidth = Math.max(px, 1.5*px); c.beginPath(); c.moveTo(b[0], b[1]); c.lineTo(t[0], t[1]); c.stroke(); }
+  for (const v of BX.voices){ const q = P(0, Y(v.y)), col = bxColor(v.m, L), r = Math.max(2*px, 0.02*q[2]*(0.6 + 0.4*v.s));
+    c.fillStyle = 'rgba(' + col.join(',') + ',0.25)'; c.beginPath(); c.arc(q[0], q[1], r*2.6, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(' + col.map(x => Math.round(x + (255 - x)*0.6)).join(',') + ',0.95)'; c.beginPath(); c.arc(q[0], q[1], r, 0, TAU); c.fill(); }
+  for (const q of BX.sparks){ const age = BX.T - q.t, p = P(q.a - BX.ang, Y(q.m)), a = L.sparkle*(1 - age/0.7)*(0.6 + 0.4*Math.sin(q.ph + age*30)); if (a <= 0.02) continue;
+    c.fillStyle = 'rgba(255,245,215,' + a.toFixed(3) + ')'; c.beginPath(); c.arc(p[0], p[1], Math.max(px, 0.006*p[2]), 0, TAU); c.fill(); }
+  c.globalCompositeOperation = 'source-over';
+  BX.slow = BX.slow*0.95 + (performance.now() - t0)*0.05;
+}
+function renderBox(now, dt){
+  if (!BX.ok) return; bxSize();
+  bxStep(Math.min(0.05, dt/60)); bxDraw();
+}
+MODE_RT.box = {
+  down(){ BX.drag = true; }, up(){ BX.drag = false; },
+  move(x, y, dx, dy){ BX.yaw += dx*0.006; BX.pitch = clamp(BX.pitch + dy*0.004, -0.6, 0.9); },
+  wheel(d){ const m = S.box.fx.motion; setDial('box', 'motion', 'zoom', +clamp(m.zoom*Math.exp(-d*0.0012), 0.5, 2).toFixed(2)); },
+  pinch(f){ const m = S.box.fx.motion; setDial('box', 'motion', 'zoom', +clamp(m.zoom*f, 0.5, 2).toFixed(2)); },
+  dbl(){ BX.yaw = 0; BX.pitch = 0; flash('Music Box · view reset'); }
+};
+
 /* ---------- engine registry for the new modes ---------- */
-const MODE_INIT = { swarm:initSwarm, ink:initInk, mandala:initMandala, laser:initLaser, deep:initDeep };
-const MODE_OK = { swarm:() => SW.ok, ink:() => INK.ok, mandala:() => MD.ok, laser:() => LZ.ok, deep:() => D3.ok };
-const MODE_RENDER = { swarm:renderSwarm, ink:renderInk, mandala:renderMandala, laser:renderLaser, deep:renderDeep };
-const MODE_WHY = { ink:() => 'Ink ' + (INK.reason || 'is not supported here'), swarm:() => 'Swarm needs WebGL2', laser:() => 'Laser show needs WebGL2', mandala:() => 'Mandala could not start', deep:() => '3D Worlds needs a PC' };
+const MODE_INIT = { swarm:initSwarm, ink:initInk, mandala:initMandala, laser:initLaser, deep:initDeep, weave:initWeave, box:initBox };
+const MODE_OK = { swarm:() => SW.ok, ink:() => INK.ok, mandala:() => MD.ok, laser:() => LZ.ok, deep:() => D3.ok, weave:() => WV.ok, box:() => BX.ok };
+const MODE_RENDER = { swarm:renderSwarm, ink:renderInk, mandala:renderMandala, laser:renderLaser, deep:renderDeep, weave:renderWeave, box:renderBox };
+const MODE_WHY = { ink:() => 'Ink ' + (INK.reason || 'is not supported here'), swarm:() => 'Swarm needs WebGL2', laser:() => 'Laser show needs WebGL2', mandala:() => 'Mandala could not start', deep:() => '3D Worlds needs a PC', weave:() => 'Sound Weaver could not start', box:() => 'Music Box could not start' };
 function engineAvail(k){
   if (k==='milk') return milkOK;
   if (k==='hyper') return HY.ok || !HY.tried;
   if (k==='deep') return PC_CLASS ? (D3.ok || !D3.tried) : !!window.__remoteLinked;
-  if (MODE_INIT[k]) return MODE_OK[k]() || !(k==='mandala' ? false : (k==='ink' ? INK.tried : k==='swarm' ? SW.tried : LZ.tried));
+  if (MODE_INIT[k]) return MODE_OK[k]() || !((k==='mandala' || k==='weave' || k==='box') ? false : (k==='ink' ? INK.tried : k==='swarm' ? SW.tried : LZ.tried));
   return true;
 }
 function modeStepGroup(eng, d){ const sel = $('#fxsel-'+eng), n = sel.options.length; if (!n) return; sel.selectedIndex = ((sel.selectedIndex + d) % n + n) % n; renderPanel(eng); flash(UI[eng].effects[sel.value].label); }
@@ -3705,6 +4265,8 @@ const ENGINE_TIPS = {
   swarm: 'Swarm: thousands of flocking particles. Hold on the picture to pull them, tap to blast them apart.',
   mandala: 'Mandala: draw on the picture and every stroke is mirrored around the centre. The music draws too.',
   laser: 'Laser show: glowing 3D figures traced by a beam. Drag to spin, scroll to zoom, double-click for a new figure.',
+  box: 'Music Box: every note the music plays draws its own line on a slowly turning drum: low notes at the bottom, high notes at the top, each note in its own colour. Held notes make long arcs, melodies step or glide, chords stack up. Drag to look around, scroll to zoom.',
+  weave: 'Sound Weaver: the music writes glowing 3D ribbons and you fly through them. Bass swells and beads the violet ribbon, the melody steers the cyan one, hats make the gold thread twinkle. Drag to look around, scroll to change speed.',
   milk: 'MilkDrop: hundreds of classic MilkDrop 2 presets, with live edit dials like the M menu.',
   avs: 'AVS stack: build your own Winamp AVS-style effect from Trans (warp the last frame) and Render (draw) effects.',
   classic: 'Classic: the original Winamp main-window analyzer and oscilloscope.',
@@ -3765,7 +4327,7 @@ const FX_TIPS = {
 // Dial tips. Looked up as engine.effect.key, then engine.key, then key.
 const KEY_TIPS = {
   on:'Turns this effect on or off. ● in the Effect list means on.', hue:'Turns every color around the color wheel.', hueSpeed:'How fast the colors cycle by themselves.',
-  sat:'Color strength: 0 is grey, higher is more vivid.', bright:'Overall brightness.', contrast:'Contrast.', chroma:'Red/blue fringes toward the edges; beats widen them.',
+  sat:'Color strength: 0 is grey, higher is more vivid.', bright:'Brightness of this effect. Bright, next to Vol, dims or lifts every visualizer at once.', contrast:'Contrast.', chroma:'Red/blue fringes toward the edges; beats widen them.',
   vig:'Darkens the corners.', pal:'The color palette.', width:'Line thickness.', size:'Size.', speed:'Speed.', spin:'Spin. Negative turns the other way.',
   src:'Which part of the music drives it: level, bass, mid, treble, the beat, or the kick, snare and hat hits.', count:'How many.', bounce:'How much it jumps with the music.', alpha:'Opacity.',
   x:'Horizontal position.', y:'Vertical position.', mirror:'Mirror image.', cx:'Moves the centre left or right.', cy:'Moves the centre up or down.',
@@ -3822,21 +4384,21 @@ const KEY_TIPS = {
   'milked.filters.invert':'Inverts every color.', 'milked.filters.brighten':'MilkDrop brighten switch.', 'milked.filters.darken':'MilkDrop darken switch.', 'milked.filters.solarize':'MilkDrop solarize switch.', 'milked.filters.wrap':'Wrap the edges instead of fading them.'
 };
 const TIP_IDS = {
-  engineSel:'Pick the visualizer. Each one has its own effects and dials.', presetSel:'The MilkDrop preset. Prev / Next / Random below, or the N, P and R keys.',
+  engineSel:'Pick the visualizer. Each one has its own effects and dials.', presetSel:'The MilkDrop preset. Prev, Random and Next just below, or the N, P and R keys.',
   btnPlay:'Play or pause (Space). With live input on, this stops it.', seek:'Jump around in the track.', btnDemo:'Plays the built-in 124 BPM demo loop.',
   btnMic:'Visualize what the microphone hears.', btnSys:'Visualize whatever this computer is playing: Spotify, YouTube, games.', btnDevice:'Visualize what this device is playing.', vol:'Playback volume. Doesn’t change how strongly the visuals react.',
   motion:'How hard shapes react to the music. 0 = trance (a steady drift), 100% = normal, up to 300% = overdrive.',
-  motionSens:'Gain on the music before it moves the shapes. Down calms a loud track, up wakes quiet music. 1× = neutral.',
+  motionSens:'Fine-tunes how strongly the music moves the shapes, on top of Reaction. 1× = neutral.',
   colorPulse:'How much the music swells the saturation and brightness of the whole picture, whatever Motion is set to. Above 150% the beats also shove the hue.',
-  colorSens:'Gain on the music that drives Color pulse. 1× = neutral.',
+  colorSens:'Fine-tunes how strongly the music drives Color pulse, on top of Reaction. 1× = neutral.',
   trails:'Psychedelic echo: every frame leaves a fading copy of itself behind. 0 = off.',
   echoMode:'How the echoes move: stream outward like a tunnel, pull inward, spin, swirl, drift, pump with the beat, mirror or kaleidoscope.',
   echoHue:'Shifts the color of every echo, so the trails turn into rainbows.',
-  sens:'Gain on every band before smoothing. Affects motion, colors, meters and beat detection. Turn up for quiet sources like a mic.',
+  sens:'Input level: gain on the sound before it is analysed, for quiet sources like a mic. It affects motion, colors, meters and beat detection. For how strongly the picture reacts, use Reaction under Feel.',
   rel:'How fast levels fall after a hit. Higher = smoother and lazier.', thr:'How sharply the bass must jump, compared with its recent average, to count as a kick (the beat). Lower = more beats.',
   presetSearch:'Type to filter the preset list.', btnPrev:'Previous preset (P).', btnNext:'Next preset (N).', btnRand:'Random preset (R).',
   autoCycle:'Switch to a random preset every few seconds.', cycle:'Seconds between automatic switches.', beatSwitch:'Switch on a strong beat instead of on a timer.', blend:'Crossfade time when presets change.',
-  btnExtra:'Downloads about 100 more MilkDrop presets.', quality:'MilkDrop render resolution. Lower it if the picture stutters.', btnMilkReset:'Forget your edits for this preset.',
+  btnExtra:'Downloads 144 more MilkDrop presets.', quality:'MilkDrop render resolution. Lower it if the picture stutters.', btnMilkReset:'Forget your edits for this preset.',
   hyq:'Hyperspace internal resolution. Lower it if the picture stutters.', btnHyPrev:'Previous scene (P).', btnHyNext:'Next scene (N).', btnHyRand:'Random scene (R).', btnHyMutate:'Nudges every dial of this scene at random.', btnHyReset:'Back to this scene’s defaults.',
   d3q:'3D Worlds resolution. Fast renders fewer pixels, Sharp renders all of them. All settings lower the resolution on their own when the graphics card can’t keep up.',
   btnD3Prev:'Previous scene (P).', btnD3Next:'Next scene (N).', btnD3Rand:'Random scene (R).', btnD3Mutate:'Nudges every dial of this scene at random.', btnD3Reset:'Back to this scene’s defaults, camera included.',
@@ -3848,7 +4410,21 @@ const TIP_IDS = {
   dyn:'How different quiet and loud parts look. Low: every song fills the screen (auto-level). High: quiet music stays calm and loud music explodes, following the real loudness.',
   lookName:'A name for the look you are about to save.', btnLookSave:'Saves what is on screen now: the visualizer, its scene or preset, and every dial.',
   btnLookQuick:'Saves this look with an automatic name (S). Rename it later under Saved looks.', btnLookUpdate:'Replaces the selected look with what is on screen now.',
-  btnLookRename:'Renames the selected look.', btnLookDel:'Deletes the selected look. Press twice.'
+  btnLookRename:'Renames the selected look.', btnLookDel:'Deletes the selected look. Press twice.',
+  bright:'Overall brightness of every visualizer, 20 % to 150 %. It only dims or brightens the picture; how much it reacts to the music stays the same. Double-click the word Bright for 100 %.',
+  btnCloudIn:'Signs in with your Google account. Your saved looks are then kept in your account and show up on every device where you sign in. Looks already on this device are added too.',
+  btnCloudOut:'Stops syncing on this device. Your looks stay here, and the copy in your account stays too.',
+  btnCloudDel:'Deletes your account and every look stored in it. The looks on this device stay. Press twice.',
+  react:'How strongly the music drives the picture: motion and color together. Down calms a loud track, up wakes quiet music; 100% is normal. Motion and Color pulse below set how much each one shows.',
+  btnStepPrev:'Previous scene or preset (P). On visualizers without scenes: the previous page of dials.',
+  btnStepNext:'Next scene or preset (N). On visualizers without scenes: the next page of dials.',
+  btnStepRand:'Something new (R): a random scene or preset. On visualizers without scenes, a new mix of every dial.',
+  btnSource:'What to visualize: the demo loop, a track from this device, the microphone, or what this computer or phone is playing.',
+  btnSaveLook:'Saves this look with an automatic name (S). Rename it later under Saved looks.',
+  musicFocus:'Which part of the music leads. Balanced; Bass: kick and bass drive the picture; Melody: vocals and synths lead and the drums calm down; Hits: every kick, snare and hat punches harder. Fine-tune it under More, Music drive.',
+  autoSel:'Changes the scene or preset by itself, on a timer or on strong beats (on visualizers without scenes, a new mix of dials). Off keeps whatever you pick.',
+  rqSel:'Internal resolution of the visualizers that draw on the graphics card. Fast if the picture stutters, Sharp on a strong PC. Auto also lowers it by itself when needed.',
+  btnMilkMutate:'Nudges the edit dials on this page at random.'
 };
 function ctlTip(eng, fx, c){ return c.tip || c.hint || KEY_TIPS[eng + '.' + fx + '.' + c.k] || KEY_TIPS[eng + '.' + c.k] || KEY_TIPS[c.k] || ''; }
 function fxTip(eng, fx){ const e = UI[eng] && UI[eng].effects && UI[eng].effects[fx]; return (e && e.desc) || (FX_TIPS[eng] && FX_TIPS[eng][fx]) || ''; }
@@ -3857,13 +4433,14 @@ function tipsInit(){
   document.documentElement.classList.add('tips');
   for (const id in TIP_IDS){ const e = document.getElementById(id); if (!e) continue;
     const w = e.closest('.ctl, .lab-sel, .chk') || e; w.dataset.tip = TIP_IDS[id]; e.removeAttribute('title'); }
+  document.querySelectorAll('[data-mode-act], #btnHyMutate, #btnD3Mutate, #btnHyReset, #btnD3Reset, #btnMilkReset').forEach(b => { if (!b.dataset.tip) b.dataset.tip = /reset/i.test(b.dataset.modeAct || b.id) ? 'Puts these dials back to their defaults.' : 'Nudges every dial on this page at random.'; });
   const lt = document.querySelector('label[for=fileIn]'); if (lt) lt.dataset.tip = 'Load an audio file from this computer and visualize it.';
   { const w = $('#presetSel').closest('.lab-sel'); if (w) w.dataset.tipFx = '1'; }
   const box = el('div', 'tipbox'); box.setAttribute('role', 'tooltip'); document.body.appendChild(box);
   let cur = null, t = 0;
   const hide = () => { clearTimeout(t); cur = null; box.classList.remove('show'); };
   const textFor = e => {
-    if (e.dataset.tipFx){ if (engine === 'milk') return TIP_IDS.presetSel; const s = document.getElementById('fxsel-' + engine); return s ? fxTip(engine, s.value) : ''; }
+    if (e.dataset.tipFx){ if (engine === 'milk') return TIP_IDS.presetSel; if (engine === 'avs') return TIP_IDS.avsPreset; const s = document.getElementById('fxsel-' + engine); return s ? fxTip(engine, s.value) : ''; }
     if (e.querySelector && e.querySelector('#engineSel')) return TIP_IDS.engineSel + ' Now: ' + (ENGINE_TIPS[engine] || '');
     return e.dataset.tip || '';
   };
@@ -3911,12 +4488,13 @@ function setEngine(choice){
     if (!WALL && (e !== 'deep' || PC_CLASS)){ const o = $('#engineSel').querySelector('[value=' + e + ']'); if (o){ o.disabled = true; o.textContent += ' (unavailable)'; } toast(MODE_WHY[e]() + ' — showing Hyperspace instead.'); }
     e = initHyper() ? 'hyper' : 'avs';
   }
-  engine = e;
+  engine = e; lastSwitch = performance.now();
   const deepRemote = e==='deep' && !D3.ok;
   ENGINES.forEach(k => { $('#'+k).hidden = k!==e || (k==='deep' && deepRemote); $('#sec-'+k).hidden = k!==e; const s = k==='milk' ? $('#presetSel') : $('#fxsel-'+k); s.hidden = k!==e; });
   $('#deepRemote').hidden = !deepRemote; if (deepRemote){ $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; $('#hint').classList.add('gone'); }
   document.body.classList.toggle('interactive', INTERACTIVE.has(e));
-  $('#engineSel').value = e; $('#fxLabel').textContent = e==='milk' ? 'Preset' : e==='reactor' ? 'Component' : (e==='hyper' || e==='deep') ? 'Scene' : MODE_UI[e] ? 'Dials' : 'Effect';
+  $('#avsPreset').hidden = e !== 'avs';
+  $('#engineSel').value = e; $('#fxLabel').textContent = (e==='milk' || e==='avs') ? 'Preset' : e==='reactor' ? 'Component' : (e==='hyper' || e==='deep') ? 'Scene' : MODE_UI[e] ? 'Dials' : 'Effect';
   if (e==='deep' && D3.ok) deepSize(true);
   if (e==='reactor'){ rctx.setTransform(1,0,0,1,0,0); rctx.globalCompositeOperation='source-over'; rctx.globalAlpha=1; rctx.fillStyle='#07080c'; rctx.fillRect(0,0,rc.width,rc.height); }
   if (e==='milk') resize();
@@ -3932,7 +4510,7 @@ let uiTick = 0, seeking = false;
 function drawMeters(){
   const tick = (uiTick++ & 7) === 0;
   if (tick && T.buffer && !live && !hostMode && !seeking){ const p = pos(); $('#tCur').textContent = fmt(p); $('#seek').value = Math.round(p/T.dur*1000); }
-  if (WALL || !$('#secReact').open) return;
+  if (WALL || !$('#secMore').open) return;
   M.b.style.transform = 'scaleX(' + A.tBass.toFixed(3) + ')'; M.m.style.transform = 'scaleX(' + A.tMid.toFixed(3) + ')';
   M.t.style.transform = 'scaleX(' + A.tTreb.toFixed(3) + ')'; M.l.style.transform = 'scaleX(' + A.tLevel.toFixed(3) + ')';
   M.led.classList.toggle('on', A.tBeat > 0.35);
@@ -3952,7 +4530,7 @@ function frame(now, external){
   const dt = clamp((now - last)/16.667, 0.25, 3); last = now;
   if (document.hidden && !external) return;
   analyse(now);
-  if (engine==='milk'){ renderMilk(); if (S.autoCycle && !S.beatSwitch && names.length && now - lastSwitch > S.cycle*1000) randPreset(); }
+  if (engine==='milk') renderMilk();
   else if (engine==='hyper') renderHyper(now, dt);
   else if (engine==='avs') renderAVS(now, dt);
   else if (engine==='classic') renderClassic(now, dt);
@@ -3961,20 +4539,21 @@ function frame(now, external){
   postFrame(dt);
   if (LOOKS.want) LOOKS.want();
   colorPulse();
-  drawMeters(); musicMeters(now);
+  drawMeters(); musicMeters(now); autoTick(now);
 }
 /* Color pulse: the music swells saturation and brightness of the whole picture, independent of Motion. A compositor-side filter, so it costs nothing per pixel. */
 let cpLvl = 0, cpLast = '', cpEl = null;
 function colorPulse(){
   const p = S.colorPulse, cv = PF.on ? PF.cv : $('#'+engine); let f = '';
   if (p > 0){
-    const target = Math.min(2.5, (A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35)*S.colorSens);
+    const target = Math.min(2.5, (A.tLevel*0.55 + A.tBass*0.45 + A.tBeat*0.35)*S.colorSens*S.react);
     cpLvl = target > cpLvl ? cpLvl + (target-cpLvl)*0.5 : cpLvl*0.9 + target*0.1;
     const q = cpLvl*p;
     f = 'saturate(' + (1 + Math.min(3, q*0.9)).toFixed(2) + ') brightness(' + (1 + Math.min(1.2, q*0.45)).toFixed(2) + ') contrast(' + (1 + Math.min(0.6, q*0.15)).toFixed(2) + ')';
     if (p > 1.5){ const h = (p - 1.5)*cpLvl*60; if (h > 0.5) f += ' hue-rotate(' + h.toFixed(1) + 'deg)'; }   // past 150 % the beats shove the hue too
   }
   if (engine==='milk'){ const ex = milkFilter(); if (ex) f = f ? f + ' ' + ex : ex; }
+  if (Math.abs(S.bright - 1) > 0.005) f = (f ? f + ' ' : '') + 'brightness(' + S.bright.toFixed(2) + ')';   // master Brightness, every visualizer
   if (cv !== cpEl){ if (cpEl) cpEl.style.filter = ''; cpEl = cv; cpLast = null; }
   if (f !== cpLast){ cpLast = f; cv.style.filter = f; }
 }
@@ -3990,10 +4569,12 @@ function bindRange(id, key, out, fmtv, after){
 bindRange('sens','sens','oSens', v => v.toFixed(2)+'×');
 bindRange('rel','rel','oRel', v => v.toFixed(2));
 bindRange('thr','thr','oThr', v => v.toFixed(2)+'×');
-bindRange('cycle','cycle','oCycle', v => v+' s');
 bindRange('blend','blend','oBlend', v => v.toFixed(1)+' s');
-bindRange('quality','quality','oQuality', v => ['low','auto','device'][v|0], resize);
 bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.vol/100; });
+{ const bi = $('#bright'), bo = $('#oBright'), sync = () => { bi.value = Math.round(S.bright*100); bo.textContent = Math.round(S.bright*100) + '%'; };
+  sync(); BOUND.push(sync);
+  bi.addEventListener('input', () => { S.bright = clamp(bi.value/100, 0.2, 1.5); bo.textContent = Math.round(S.bright*100) + '%'; save(); });
+  bi.parentElement.querySelector('span').addEventListener('dblclick', () => { S.bright = 1; sync(); save(); }); }
 /* Feel: Motion and Color pulse 0–300 %, a sensitivity for each (0.1–10×, log scale, centre = 1×), and the trails / echo pass.
    Double-click a label to put that dial back. */
 { const LOG = v => +Math.pow(10, v/100).toFixed(3), UNLOG = g => Math.round(Math.log10(clamp(g, 0.1, 10))*100);
@@ -4001,6 +4582,7 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
   const showTag = () => { const v = S.motion; let t = v > 1.04 ? 'overdrive' : v >= 0.96 ? 'full motion' : v <= 0.01 ? 'trance' : v < 0.4 ? 'calm' : 'eased'; if (S.trails > 0.001) t += ' · echo'; tag.textContent = t; };
   const echoUI = () => { const off = S.trails <= 0.001; $('#echoMode').disabled = off; $('#echoHue').disabled = off; };
   const FEEL = [
+    ['react',      () => UNLOG(S.react),                v => { S.react = LOG(v); },                  () => Math.round(S.react*100) + '%'],
     ['motion',     () => Math.round(S.motion*100),     v => { S.motion = clamp(v/100, 0, 3); },     () => Math.round(S.motion*100) + '%'],
     ['motionSens', () => UNLOG(S.motionSens),           v => { S.motionSens = LOG(v); },             () => fx(S.motionSens)],
     ['colorPulse', () => Math.round(S.colorPulse*100), v => { S.colorPulse = clamp(v/100, 0, 3); }, () => Math.round(S.colorPulse*100) + '%'],
@@ -4018,12 +4600,18 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
   em.value = S.echoMode; em.addEventListener('change', () => { S.echoMode = em.value; PF.frame = 0; save(); });
   BOUND.push(() => { em.value = S.echoMode; showTag(); echoUI(); postToggle(); });
   showTag(); echoUI(); }
+/* Music focus (v15): one tap sets the four drives for a common balance; the drive sliders under More fine-tune it. */
+const FOCUS = { balanced:[1, 1, 1, 1], bass:[1.6, 0.7, 0.6, 1.3], melody:[0.6, 1.6, 1.2, 0.6], hits:[1.1, 0.9, 1, 2] };
+let musicSync = () => {};
+function focusUI(){ const v = [S.drvB, S.drvM, S.drvH, S.drvK]; let on = '';
+  for (const k in FOCUS) if (FOCUS[k].every((x, i) => Math.abs(x - v[i]) < 0.015)) on = k;
+  document.querySelectorAll('#musicFocus .chip').forEach(b => { const a = b.dataset.focus === on; b.classList.toggle('on', a); b.setAttribute('aria-checked', a ? 'true' : 'false'); }); }
 /* Music drive: Bass / Mid / High drive and Hits 0–300 %, Dynamics 0–100 %. Double-click a label to put that dial back. */
 { const tag = $('#musicTag');
   const showTag = () => { const w = [S.drvB, S.drvM, S.drvH], mx = Math.max(...w), mn = Math.min(...w), names = ['bass', 'mid', 'high'];
     let t = mx - mn < 0.05 ? (mx < 0.05 ? 'music off' : mx > 1.05 ? 'all bands up' : mx < 0.95 ? 'all bands down' : 'balanced') : names[w.indexOf(mx)] + ' led';
     if (S.drvK < 0.05) t += ' · no hits'; else if (S.drvK > 1.5) t += ' · hard hits';
-    t += S.dyn > 0.85 ? ' · true loudness' : S.dyn < 0.2 ? ' · auto-level' : ''; tag.textContent = t; };
+    t += S.dyn > 0.85 ? ' · true loudness' : S.dyn < 0.2 ? ' · auto-level' : ''; tag.textContent = t; focusUI(); };
   const pct = v => Math.round(v*100) + '%';
   const MUSIC = [
     ['drvB', () => Math.round(S.drvB*100), v => { S.drvB = clamp(v/100, 0, 3); }, () => pct(S.drvB)],
@@ -4038,11 +4626,14 @@ bindRange('vol','vol','', v => '', () => { if (volNode) volNode.gain.value = S.v
     inp.addEventListener('input', () => { set(+inp.value); o.textContent = show(); showTag(); save(); });
     inp.closest('.ctl').querySelector('label').addEventListener('dblclick', () => { S[id] = DEF[id]; sync(); showTag(); save(); });
   });
-  BOUND.push(showTag); showTag(); }
+  BOUND.push(showTag); showTag();
+  musicSync = () => { MUSIC.forEach(([id, get, set, show]) => { $('#'+id).value = get(); $('#o' + id[0].toUpperCase() + id.slice(1)).textContent = show(); }); showTag(); }; }
+document.querySelectorAll('#musicFocus .chip').forEach(b => b.addEventListener('click', () => {
+  const f = FOCUS[b.dataset.focus]; if (!f) return; S.drvB = f[0]; S.drvM = f[1]; S.drvH = f[2]; S.drvK = f[3]; musicSync(); save(); flash('Music focus · ' + b.textContent); }));
 /* Live band meters in the Music drive section: level bar per band, and a light that flashes on each kick / snare / hat. */
-const MDRV = { b:[$('#mbB'), $('#mbM'), $('#mbH')], l:[$('#hbB'), $('#hbM'), $('#hbH')], c:[$('#cbB'), $('#cbM'), $('#cbH')], sec:$('#sec-music'), n:0, rate:[0, 0, 0], last:[0, 0, 0], t0:0 };
+const MDRV = { b:[$('#mbB'), $('#mbM'), $('#mbH')], l:[$('#hbB'), $('#hbM'), $('#hbH')], c:[$('#cbB'), $('#cbM'), $('#cbH')], sec:$('#secMore'), n:0, rate:[0, 0, 0], last:[0, 0, 0], t0:0 };
 function musicMeters(now){
-  if (WALL || !MDRV.sec || MDRV.sec.hidden || document.body.classList.contains('ui-hidden')) return;
+  if (WALL || !MDRV.sec || !MDRV.sec.open || document.body.classList.contains('ui-hidden')) return;
   const e = [A.tBass*S.drvB, A.tMid*S.drvM, A.tTreb*S.drvH];
   for (let b=0;b<3;b++){ MDRV.b[b].style.transform = 'scaleX(' + Math.min(1, e[b]).toFixed(3) + ')'; MDRV.l[b].classList.toggle('on', AF.hit[b]*S.drvK > 0.42 && [S.drvB, S.drvM, S.drvH][b] > 0.02); }
   if (now - MDRV.t0 > 1000){ const dt = (now - MDRV.t0)/1000; MDRV.t0 = now;
@@ -4050,12 +4641,13 @@ function musicMeters(now){
     MDRV.n++; }
 }
 /* ================= saved looks (v10): name the current picture and bring it back later ================= */
+// v11: signed in, every save, update, rename and delete also goes to your account (feat_cloud.js), so looks sync across devices.
 // A look is the whole state (visualizer, scene or preset, every dial, Feel and Music drive) plus a thumbnail, kept in this
 // device's storage. Loading one goes through applyState(), the path a linked phone already uses, then goes out to a linked PC
 // or TV like any other change. Per-device settings (volume, render quality) stay put. Hyperspace image scenes keep a small
 // copy of their picture so they come back as they were.
 const LOOKS = { list:[], sel:'', want:null, KEY:'spectral-drift-looks', MAX:80, del:0, delT:0 };
-function looksLoad(){ try { const j = JSON.parse(localStorage.getItem(LOOKS.KEY) || '[]'); LOOKS.list = Array.isArray(j) ? j.filter(x => x && x.id && x.state && typeof x.state.engine === 'string') : []; } catch(e){ LOOKS.list = []; } }
+function looksLoad(){ try { const j = JSON.parse(localStorage.getItem(LOOKS.KEY) || '[]'); LOOKS.list = Array.isArray(j) ? j.filter(x => x && x.id && x.state && typeof x.state.engine === 'string') : []; } catch(e){ LOOKS.list = []; } looksSort(); }
 function looksStore(){ try { localStorage.setItem(LOOKS.KEY, JSON.stringify(LOOKS.list)); return true; } catch(e){ toast('Storage is full. Delete a few looks and try again.'); return false; } }
 function engName(e){ const o = document.querySelector('#engineSel option[value="' + e + '"]'); return o ? o.textContent.replace(/\s*\(.*\)\s*$/, '') : e; }
 function lookLabel(st){
@@ -4085,15 +4677,18 @@ function looksGrab(cb){ let done = false; const fin = th => { if (done) return; 
 function lookImage(){ if (!IMG.user || !IMG.el) return '';
   try { const k = Math.min(1, 448/Math.max(IMG.el.width, IMG.el.height)), c = el('canvas'); c.width = Math.max(1, Math.round(IMG.el.width*k)); c.height = Math.max(1, Math.round(IMG.el.height*k));
     c.getContext('2d').drawImage(IMG.el, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', 0.8); } catch(e){ return ''; } }
-function lookSnapshot(){ const st = JSON.parse(stateJSON()); REMOTE_LOCAL.forEach(k => { delete st[k]; });
+function lookSnapshot(){ const st = JSON.parse(stateJSON()); REMOTE_LOCAL.forEach(k => { delete st[k]; }); delete st.bright;   // Brightness is a viewing setting, not part of the look
   const img = st.engine === 'hyper' && (HY_SCENES[st.hyper.scene] || {}).group === 'Your image' ? lookImage() : '';
   return { st, img }; }
 function lookSave(name){
   name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40) || lookAutoName();
   const { st, img } = lookSnapshot();
-  const L = { id:'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, t:Date.now(), label:lookLabel(st), state:st, img, thumb:'' };
-  looksGrab(th => { L.thumb = th; LOOKS.list.unshift(L); if (LOOKS.list.length > LOOKS.MAX) LOOKS.list.length = LOOKS.MAX;
-    if (!looksStore()){ LOOKS.list.shift(); return; }
+  const now = Date.now(), L = { id:'L' + now.toString(36) + Math.random().toString(36).slice(2, 6), name, c:now, t:now, label:lookLabel(st), state:st, img, thumb:'' };
+  looksGrab(th => { L.thumb = th; LOOKS.list.unshift(L);
+    const gone = LOOKS.list.length > LOOKS.MAX ? LOOKS.list.pop() : null;   // full: the oldest look makes room (as a real delete, so it syncs)
+    if (!looksStore()){ LOOKS.list.shift(); if (gone) LOOKS.list.push(gone); return; }
+    if (gone) lookGone(gone.id, lookT(gone.id));
+    cloudPut(L.id);
     LOOKS.sel = L.id; looksRender(); flash('Saved · ' + name); });
   return name;
 }
@@ -4101,22 +4696,23 @@ function lookUpdate(id){
   const L = LOOKS.list.find(x => x.id === id); if (!L) return;
   const { st, img } = lookSnapshot();
   looksGrab(th => { const old = { state:L.state, img:L.img, thumb:L.thumb, label:L.label, t:L.t };
-    Object.assign(L, { state:st, img, thumb:th || L.thumb, label:lookLabel(st), t:Date.now() });
+    Object.assign(L, { state:st, img, thumb:th || L.thumb, label:lookLabel(st), t:lookT(id) });
     if (!looksStore()){ Object.assign(L, old); return; }
-    looksRender(); flash('Updated · ' + L.name); });
+    cloudPut(id); looksRender(); flash('Updated · ' + L.name); });
 }
 function lookApply(id){
   const L = LOOKS.list.find(x => x.id === id); if (!L) return;
   try { ensureCtx(); } catch(e){}
-  applyState(JSON.parse(JSON.stringify(L.state)));
+  const st = JSON.parse(JSON.stringify(L.state)); st.bright = S.bright; applyState(st);
   if (L.img) loadImageURL(L.img, true);
   remoteQueue(); if (L.img) remoteImage();
   LOOKS.sel = id; looksRender(); flash(L.name);
 }
-function lookDelete(id){ const i = LOOKS.list.findIndex(x => x.id === id); if (i < 0) return; const [L] = LOOKS.list.splice(i, 1);
-  if (!looksStore()){ LOOKS.list.splice(i, 0, L); return; } if (LOOKS.sel === id) LOOKS.sel = ''; looksRender(); flash('Deleted · ' + L.name); }
+function lookDelete(id){ const i = LOOKS.list.findIndex(x => x.id === id); if (i < 0) return; const t = lookT(id), [L] = LOOKS.list.splice(i, 1);
+  if (!looksStore()){ LOOKS.list.splice(i, 0, L); return; } lookGone(id, t); if (LOOKS.sel === id) LOOKS.sel = ''; looksRender(); flash('Deleted · ' + L.name); }
 function lookRename(id, name){ const L = LOOKS.list.find(x => x.id === id); name = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 40);
-  if (!L || !name || name === L.name) { looksRender(); return; } const old = L.name; L.name = name; if (!looksStore()) L.name = old; looksRender(); }
+  if (!L || !name || name === L.name) { looksRender(); return; } const old = L.name, ot = L.t; L.name = name; L.t = lookT(id);
+  if (!looksStore()){ L.name = old; L.t = ot; } else cloudPut(id); looksRender(); }
 function looksRender(){
   const box = $('#looksList'); if (!box) return; box.innerHTML = '';
   $('#looksTag').textContent = LOOKS.list.length ? LOOKS.list.length + ' saved' : 'none yet';
@@ -4150,17 +4746,265 @@ function looksInit(){
     if (LOOKS.del && now - LOOKS.delT < 3500){ lookDelete(LOOKS.sel); return; }
     LOOKS.del = 1; LOOKS.delT = now; b.textContent = 'Tap again to delete'; setTimeout(() => { if (LOOKS.del && performance.now() - LOOKS.delT >= 3400){ LOOKS.del = 0; b.textContent = 'Delete'; } }, 3500); });
   window.addEventListener('storage', e => { if (e.key === LOOKS.KEY){ looksLoad(); looksRender(); } });
+  cloudBoot();
 }
-const cycleUI = () => { const on = S.autoCycle; $('#cycle').disabled = !on; $('#beatSwitch').disabled = !on; };
-$('#autoCycle').checked = S.autoCycle; $('#autoCycle').addEventListener('change', e => { S.autoCycle = e.target.checked; lastSwitch = performance.now(); cycleUI(); save(); });
-$('#beatSwitch').checked = S.beatSwitch; $('#beatSwitch').addEventListener('change', e => { S.beatSwitch = e.target.checked; save(); });
-BOUND.push(() => { $('#autoCycle').checked = S.autoCycle; $('#beatSwitch').checked = S.beatSwitch; cycleUI(); });
-cycleUI();
+/* ================= cloud sync (v11): sign in with Google and your saved looks follow you to every device ================= */
+// Looks still live in this device's storage. Signed in, each look is also kept in your account (Firebase Firestore,
+// users/{uid}/looks/{id}) and changes made on your other devices arrive live. The newest change wins (t, ms); a deleted
+// look leaves a small marker {del, t} so the delete reaches devices that were offline, and the Firestore rules refuse an
+// update older than what is stored, so a device that was asleep can't overwrite a newer edit. The sign-in code (Firebase
+// compat SDK) loads only when someone signs in. The website uses Google's pop-up; the Windows and Android apps run
+// Google's own sign-in outside the page (Google blocks its login inside app windows) and hand the ID token back through
+// window.__sdGoogleToken(token).
+const CLOUD_CFG = {"apiKey":"AIzaSyBJE0K9TGiWCFuqLLGfTj5JO62FHEwiM_8","authDomain":"spectral-drift.firebaseapp.com","projectId":"spectral-drift","storageBucket":"spectral-drift.firebasestorage.app","messagingSenderId":"1063892958425","appId":"1:1063892958425:web:52183ae694fa1a00c952c8"};   // Firebase web config; filled in at build time
+const CLOUD = { V:'12.19.0', LIB:'', HOSTS:['aaronaudio09.github.io', 'localhost', '127.0.0.1'], KEY:'spectral-drift-cloud', TOMB:'spectral-drift-looks-del',
+  tomb:{}, seen:{}, sdk:null, ready:false, auth:null, db:null, user:null, uid:'', unsub:null, gen:0, synced:false,
+  st:'off', msg:'', pend:0, wait:null, del:0, delT:0, retry:0 };
+function cloudWay(){
+  if (WALL || !CLOUD_CFG || !CLOUD_CFG.apiKey) return '';
+  if ((android && typeof android.googleSignIn === 'function') || (window.SDDesktop && typeof window.SDDesktop.googleSignIn === 'function')) return 'app';
+  return CLOUD.HOSTS.includes(location.hostname) ? 'web' : '';   // only addresses listed in Firebase's authorized domains can open the pop-up
+}
+
+/* ---------- delete markers and edit times ---------- */
+function tombLoad(){ try { const j = JSON.parse(localStorage.getItem(CLOUD.TOMB) || '{}'); CLOUD.tomb = j && typeof j === 'object' && !Array.isArray(j) ? j : {}; } catch(e){ CLOUD.tomb = {}; } }
+function tombStore(){
+  const ids = Object.keys(CLOUD.tomb);
+  if (ids.length > 400) ids.sort((a, b) => CLOUD.tomb[a] - CLOUD.tomb[b]).slice(0, ids.length - 400).forEach(id => { delete CLOUD.tomb[id]; });
+  try { localStorage.setItem(CLOUD.TOMB, JSON.stringify(CLOUD.tomb)); } catch(e){}
+}
+const lookC = L => +L.c || parseInt(String(L.id).slice(1, 9), 36) || +L.t || 0;   // made-at time (ids start with Date.now() in base 36)
+function looksSort(){ LOOKS.list.sort((a, b) => lookC(b) - lookC(a)); }
+// A new edit always beats the version this device last saw, even if this device's clock runs a little slow.
+function lookT(id){ const L = LOOKS.list.find(x => x.id === id); return Math.max(Date.now(), (CLOUD.seen[id] || 0) + 1, (L ? +L.t || 0 : 0) + 1); }
+function lookGone(id, t){ CLOUD.tomb[id] = t || Date.now(); tombStore(); cloudPut(id); }   // after a look leaves LOOKS.list
+
+/* ---------- account copy <-> local look ---------- */
+const dataURL = s => typeof s === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s) ? s : '';
+function lookDoc(L){ return { name:L.name, label:L.label || '', c:lookC(L), t:+L.t || 0, state:JSON.stringify(L.state), img:L.img || '', thumb:L.thumb || '', v:1 }; }
+function docLook(id, d){
+  let st = null; try { st = JSON.parse(d.state); } catch(e){}
+  if (!st || typeof st !== 'object' || typeof st.engine !== 'string') return null;
+  let label = String(d.label || ''); if (!label) try { label = lookLabel(st); } catch(e){}
+  return { id, name:String(d.name || 'Look').slice(0, 40), c:+d.c || 0, t:+d.t || 0, label, state:st, img:dataURL(d.img), thumb:dataURL(d.thumb) };
+}
+const cloudCol = () => CLOUD.db.collection('users').doc(CLOUD.uid).collection('looks');
+function cloudPut(id){
+  if (!CLOUD.uid || !CLOUD.db) return;
+  const L = LOOKS.list.find(x => x.id === id), t = L ? 0 : CLOUD.tomb[id];
+  if (!L && !t) return;
+  cloudWrite(cloudCol().doc(id).set(L ? lookDoc(L) : { del:true, t }));
+}
+function cloudWrite(p){
+  CLOUD.pend++; cloudRender();
+  p.catch(e => { if (!e || e.code !== 'permission-denied') cloudFail(e); })   // refused = a newer copy is already stored; it arrives through the listener
+   .then(() => { CLOUD.pend = Math.max(0, CLOUD.pend - 1); cloudRender(); });
+}
+// Every change to the account copy (including this device's own writes) lands here. Per look, the newest of three wins:
+// this device's look (t), this device's delete marker, and the account's copy (a look or a delete marker).
+function cloudMerge(snap, gen){
+  if (gen !== CLOUD.gen) return;
+  const sure = !snap.metadata.fromCache, byId = new Map(LOOKS.list.map(L => [L.id, L])), seen = new Set(), put = [];
+  let changed = false, tombs = false;
+  snap.forEach(d => {
+    const id = d.id, c = d.data() || {}, ct = +c.t || 0, L = byId.get(id), lt = L ? +L.t || 0 : -1, tt = id in CLOUD.tomb ? +CLOUD.tomb[id] : -1, mine = d.metadata.hasPendingWrites;
+    seen.add(id); if (!mine) CLOUD.seen[id] = Math.max(CLOUD.seen[id] || 0, ct);
+    if (ct > lt && ct > tt){                                   // the account holds the newest version
+      if (c.del){ if (L){ LOOKS.list.splice(LOOKS.list.indexOf(L), 1); byId.delete(id); if (LOOKS.sel === id) LOOKS.sel = ''; changed = true; } }
+      else { const N = docLook(id, c); if (!N) return; if (L) Object.assign(L, N); else { LOOKS.list.push(N); byId.set(id, N); } changed = true; }
+      if (tt >= 0 && !mine){ delete CLOUD.tomb[id]; tombs = true; }
+    } else if (lt > ct && lt > tt) put.push(id);               // this device holds the newest version
+    else if (tt > ct && tt > lt) put.push(id);                 // this device deleted it last
+    else if (tt >= 0 && c.del && !mine){ delete CLOUD.tomb[id]; tombs = true; }   // the delete is safely stored
+  });
+  if (sure && !CLOUD.synced){                                  // first full picture of the account this session
+    CLOUD.synced = true;
+    for (const L of LOOKS.list) if (!seen.has(L.id)) put.push(L.id);                                   // made before signing in, or offline
+    for (const id of Object.keys(CLOUD.tomb)) if (!seen.has(id)){ delete CLOUD.tomb[id]; tombs = true; }   // deleted before it ever reached the account
+  }
+  if (changed){ looksSort(); looksStore(); looksRender(); }
+  if (tombs) tombStore();
+  put.forEach(cloudPut);
+  if (CLOUD.st !== 'busy') CLOUD.st = sure ? 'on' : 'wait';
+  cloudRender();
+}
+
+/* ---------- Firebase ---------- */
+function cloudSDK(){
+  if (window.firebase && window.firebase.auth && window.firebase.firestore) return Promise.resolve();
+  if (CLOUD.sdk) return CLOUD.sdk;
+  const base = CLOUD.LIB || 'https://cdn.jsdelivr.net/npm/firebase@' + CLOUD.V + '/';
+  const one = f => new Promise((ok, no) => { const s = el('script'); s.src = base + f; s.async = false; s.onload = ok; s.onerror = () => no(new Error('load ' + f)); document.head.appendChild(s); });
+  CLOUD.sdk = one('firebase-app-compat.js').then(() => Promise.all([one('firebase-auth-compat.js'), one('firebase-firestore-compat.js')]));
+  CLOUD.sdk.catch(() => { CLOUD.sdk = null; });
+  return CLOUD.sdk;
+}
+function cloudInit(){
+  if (CLOUD.ready) return Promise.resolve();
+  return cloudSDK().then(() => {
+    if (CLOUD.ready) return;
+    const fb = window.firebase, app = fb.apps.length ? fb.app() : fb.initializeApp(CLOUD_CFG);
+    CLOUD.auth = app.auth(); CLOUD.db = app.firestore(); CLOUD.ready = true;
+    return new Promise(ok => { let first = true;
+      CLOUD.auth.onAuthStateChanged(u => {
+        if (u){ if (u.uid !== CLOUD.uid) cloudStart(u); }
+        else if (CLOUD.uid) cloudStop();
+        else if (first) try { localStorage.removeItem(CLOUD.KEY); } catch(e){}   // the saved session is gone
+        if (first){ first = false; ok(); } }); });
+  });
+}
+function cloudStart(u){
+  CLOUD.user = u; CLOUD.uid = u.uid; CLOUD.gen++; CLOUD.synced = false; CLOUD.seen = {}; CLOUD.st = 'sync'; CLOUD.msg = ''; CLOUD.pend = 0;
+  try { localStorage.setItem(CLOUD.KEY, '1'); } catch(e){}
+  cloudListen(); cloudRender();
+}
+function cloudListen(){
+  if (CLOUD.unsub){ CLOUD.unsub(); CLOUD.unsub = null; }
+  const gen = CLOUD.gen;
+  CLOUD.unsub = cloudCol().onSnapshot({ includeMetadataChanges:true }, snap => cloudMerge(snap, gen), e => {
+    if (gen !== CLOUD.gen) return;
+    CLOUD.unsub = null; cloudFail(e);
+    clearTimeout(CLOUD.retry); CLOUD.retry = setTimeout(() => { if (gen === CLOUD.gen && CLOUD.uid){ CLOUD.st = 'sync'; cloudListen(); cloudRender(); } }, 30000);
+  });
+}
+function cloudStop(){
+  CLOUD.gen++; if (CLOUD.unsub){ CLOUD.unsub(); CLOUD.unsub = null; } clearTimeout(CLOUD.retry);
+  CLOUD.user = null; CLOUD.uid = ''; CLOUD.st = 'off'; CLOUD.msg = ''; CLOUD.pend = 0; CLOUD.synced = false;
+  try { localStorage.removeItem(CLOUD.KEY); } catch(e){}
+  cloudRender();
+}
+function cloudFail(e){ CLOUD.st = 'err'; CLOUD.msg = cloudMsg(e); cloudRender(); try { console.warn('[cloud]', e && (e.code || e.message), e); } catch(_){} }
+function cloudMsg(e){
+  const c = String((e && (e.code || e.message)) || '');
+  if (/popup-blocked/.test(c)) return 'The browser blocked Google\'s window. Allow pop-ups for this site and try again.';
+  if (/network|unavailable|offline|^load /.test(c)) return 'Can\'t reach your account right now. Your looks stay saved on this device.';
+  if (/unauthorized-domain|operation-not-allowed|api-key|configuration-not-found|invalid-credential|argument-error/.test(c)) return 'Sign-in isn\'t set up for this copy yet.';
+  if (/permission-denied/.test(c)) return 'Sync paused: your account refused access.';
+  if (/quota|resource-exhausted/.test(c)) return 'Sync is resting until tomorrow (daily limit). Your looks stay saved here.';
+  return 'Sign-in didn\'t work. Try again.';
+}
+const cloudQuiet = e => /popup-closed-by-user|cancelled-popup-request|user-cancelled|app\/canceled/.test(String((e && e.code) || ''));
+
+/* ---------- sign in / out / delete ---------- */
+// The apps open Google's sign-in themselves and call this with the ID token (or with no token and a reason).
+window.__sdGoogleToken = (tok, err) => { const w = CLOUD.wait; CLOUD.wait = null; if (!w) return; if (tok) w.ok(String(tok)); else w.no({ code:'app/' + (err || 'canceled') }); };
+function cloudAppToken(){
+  return new Promise((ok, no) => {
+    if (CLOUD.wait) CLOUD.wait.no({ code:'app/canceled' });
+    CLOUD.wait = { ok, no };
+    try { ((android && typeof android.googleSignIn === 'function') ? android : window.SDDesktop).googleSignIn(); } catch(e){ CLOUD.wait = null; no(e); }
+  });
+}
+const cloudCred = tok => window.firebase.auth.GoogleAuthProvider.credential(tok);
+function cloudSignIn(){
+  const way = cloudWay(); if (!way || CLOUD.st === 'busy' || CLOUD.user) return;
+  CLOUD.st = 'busy'; cloudRender();
+  cloudInit().then(() => {
+    if (CLOUD.user) return;
+    if (way === 'web') return CLOUD.auth.signInWithPopup(new window.firebase.auth.GoogleAuthProvider());
+    return cloudAppToken().then(tok => CLOUD.auth.signInWithCredential(cloudCred(tok)));
+  }).then(() => {
+    const u = CLOUD.auth && CLOUD.auth.currentUser;
+    if (u && u.uid !== CLOUD.uid) cloudStart(u);
+    if (CLOUD.user){ if (CLOUD.st === 'busy') CLOUD.st = 'sync'; flash('Signed in · your looks sync'); } else CLOUD.st = 'off';
+    cloudRender();
+  }, e => { CLOUD.st = CLOUD.user ? 'on' : 'off'; cloudRender(); try { console.warn('[cloud] sign-in', e && e.code, e && e.message); } catch(_){}
+    if (cloudQuiet(e)) return;
+    // Pop-ups only open straight from a click; if Firebase was still loading, the window got blocked. It's ready now.
+    if (/popup-blocked/.test(String(e && e.code)) && !CLOUD.blocked){ CLOUD.blocked = 1; toast('Press Sign in with Google once more to open Google\'s window.'); return; }
+    toast(cloudMsg(e)); });
+}
+function cloudSignOut(){
+  if (!CLOUD.auth || !CLOUD.user) return;
+  CLOUD.auth.signOut().catch(() => {});
+  try {
+    if (android && typeof android.googleSignOut === 'function') android.googleSignOut();
+    if (window.SDDesktop && typeof window.SDDesktop.googleSignOut === 'function') window.SDDesktop.googleSignOut();
+  } catch(e){}
+  flash('Signed out · your looks stay on this device');
+}
+// Google asks for a fresh sign-in before an account can be deleted if the last one was a while ago.
+function cloudFresh(u){
+  return cloudWay() === 'web' ? u.reauthenticateWithPopup(new window.firebase.auth.GoogleAuthProvider())
+    : cloudAppToken().then(tok => u.reauthenticateWithCredential(cloudCred(tok)));
+}
+function cloudWipe(){
+  if (!CLOUD.uid) return;
+  const u = CLOUD.user, col = cloudCol();
+  CLOUD.gen++; if (CLOUD.unsub){ CLOUD.unsub(); CLOUD.unsub = null; }   // stop listening first so the deletes don't echo back
+  CLOUD.st = 'busy'; cloudRender();
+  col.get().then(qs => {
+    const all = []; let b = CLOUD.db.batch(), n = 0;
+    qs.forEach(d => { b.delete(d.ref); if (++n % 450 === 0){ all.push(b.commit()); b = CLOUD.db.batch(); } });
+    all.push(b.commit()); return Promise.all(all);
+  }).then(() => {
+    CLOUD.tomb = {}; tombStore();
+    return u.delete().catch(e => e && e.code === 'auth/requires-recent-login' ? cloudFresh(u).then(() => u.delete()) : Promise.reject(e))
+      .then(() => { toast('Deleted your account and its cloud looks. The looks on this device stay here.'); },
+            () => { toast('Deleted your cloud looks. To remove the account too, sign in again and repeat.'); return CLOUD.auth.signOut(); });
+  }).catch(e => {
+    toast(cloudMsg(e)); const cu = CLOUD.auth && CLOUD.auth.currentUser;
+    if (cu){ CLOUD.uid = ''; cloudStart(cu); } else cloudStop();
+  });
+}
+
+/* ---------- panel ---------- */
+function cloudRender(){
+  const row = $('#cloudRow'); if (!row) return;
+  const way = cloudWay(); row.hidden = !way; if (!way) return;
+  const on = !!CLOUD.user, busy = CLOUD.st === 'busy';
+  $('#btnCloudIn').hidden = on; $('#cloudNote').hidden = on; $('#cloudOn').hidden = !on;
+  $('#cloudInTxt').textContent = busy && !on ? 'Signing in…' : 'Sign in with Google';
+  const g = $('#cloudG');   // Google's mark, served by Google (the asset FirebaseUI uses); loaded the first time the row shows
+  if (g && !g.getAttribute('src')){ g.addEventListener('load', () => { g.hidden = false; }); g.addEventListener('error', () => g.remove()); g.src = 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg'; }
+  if (!on) return;
+  const st = CLOUD.st === 'err' ? 'err' : CLOUD.st === 'wait' ? 'wait' : CLOUD.st === 'on' && !CLOUD.pend ? 'on' : 'sync';
+  $('#cloudDot').className = 'cdot ' + st;
+  $('#cloudState').textContent = busy ? 'Working…' : st === 'on' ? 'Synced' : st === 'wait' ? 'Offline · syncs when you\'re back' : st === 'err' ? CLOUD.msg : 'Syncing…';
+  $('#cloudWho').textContent = CLOUD.user.email || 'your Google account';
+}
+function cloudBoot(){
+  if (WALL) return;
+  tombLoad();
+  window.addEventListener('storage', e => { if (e.key === CLOUD.TOMB) tombLoad(); });
+  if (!$('#cloudRow')) return;
+  $('#btnCloudIn').addEventListener('click', cloudSignIn);
+  $('#btnCloudOut').addEventListener('click', cloudSignOut);
+  $('#btnCloudDel').addEventListener('click', e => { const b = e.currentTarget, now = performance.now();
+    if (CLOUD.del && now - CLOUD.delT < 3500){ CLOUD.del = 0; b.textContent = 'Delete cloud copy'; cloudWipe(); return; }
+    CLOUD.del = 1; CLOUD.delT = now; b.textContent = 'Tap again to delete';
+    setTimeout(() => { if (CLOUD.del && performance.now() - CLOUD.delT >= 3400){ CLOUD.del = 0; b.textContent = 'Delete cloud copy'; } }, 3500); });
+  cloudRender();
+  let was = false; try { was = localStorage.getItem(CLOUD.KEY) === '1'; } catch(e){}
+  if (was && cloudWay()) cloudInit().catch(e => { CLOUD.st = 'off'; cloudRender(); try { console.warn('[cloud]', e); } catch(_){} });
+  else if (cloudWay() === 'web'){
+    // Browsers only allow Google's pop-up straight from a click, so get Firebase ready a moment before one is likely:
+    // when the row has been on screen for a bit, or the pointer or focus reaches the button.
+    const pre = () => { if (!CLOUD.ready && !CLOUD.sdk) cloudInit().catch(() => {}); };
+    ['pointerenter', 'focus', 'touchstart'].forEach(ev => $('#btnCloudIn').addEventListener(ev, pre, { once:true, passive:true }));
+    try { let t = 0; const io = new IntersectionObserver(es => { clearTimeout(t); if (es.some(e => e.isIntersecting)) t = setTimeout(() => { io.disconnect(); pre(); }, 1500); });
+      io.observe($('#cloudRow')); } catch(e){}
+  }
+}
+/* v15: Auto-change and Render quality, one setting each for every visualizer (under More) */
+{ const sel = $('#autoSel'); AUTO_OPTS.forEach(([v, l]) => { const o = el('option'); o.value = v; o.textContent = l; sel.appendChild(o); });
+  const sync = () => { sel.value = S.auto; }; sync(); BOUND.push(sync);
+  sel.addEventListener('change', () => { S.auto = sel.value; lastSwitch = performance.now(); save(); flash(S.auto === 'off' ? 'Auto-change off' : 'Auto-change · ' + sel.options[sel.selectedIndex].text.toLowerCase()); }); }
+{ const sel = $('#rqSel'), sync = () => { sel.value = String(clamp(S.hyq|0, 0, 2)); }; sync(); BOUND.push(sync);
+  sel.addEventListener('change', () => { const q = clamp(+sel.value|0, 0, 2); S.hyq = S.d3q = S.quality = q; save();
+    resize(); HY.W = 0; hySize(); D3.scale = [0.5, 0.8, 1][q]; D3.lastAdj = performance.now(); if (D3.ok) deepSize(true); flash('Render quality · ' + sel.options[sel.selectedIndex].text); }); }
+/* v15: Source menu (demo, a file, the mic, what the computer or phone is playing) */
+{ const btn = $('#btnSource'), menu = $('#srcMenu'), close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.addEventListener('click', e => { e.stopPropagation(); const open = menu.hidden; menu.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false'); });
+  menu.addEventListener('click', e => { if (e.target.closest('.btn')) setTimeout(close, 0); });
+  document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest('.src')) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) close(); }); }
 $('#presetSearch').addEventListener('input', applyFilter);
 $('#presetSel').addEventListener('change', e => loadPreset(names.indexOf(e.target.value)));
-$('#btnPrev').addEventListener('click', () => stepPreset(-1));
-$('#btnNext').addEventListener('click', () => stepPreset(1));
-$('#btnRand').addEventListener('click', randPreset);
+$('#btnStepPrev').addEventListener('click', () => stepPreset(-1));
+$('#btnStepNext').addEventListener('click', () => stepPreset(1));
+$('#btnStepRand').addEventListener('click', randPreset);
+$('#btnSaveLook').addEventListener('click', () => { if (!WALL) lookSave(''); });
 $('#btnExtra').addEventListener('click', loadExtra);
 $('#engineSel').addEventListener('change', e => { ensureCtx(); setEngine(e.target.value); });
 $('#btnExpand').addEventListener('click', () => { const d = $('#dock'); d.classList.toggle('collapsed'); const open = !d.classList.contains('collapsed'); $('#btnExpand').setAttribute('aria-expanded', open); $('#btnExpand').textContent = open ? 'Dials ▴' : 'Dials ▾'; resize(); });
@@ -4174,29 +5018,25 @@ $('#stage').addEventListener('click', e => {
 });
 $('#btnFull').addEventListener('click', e => { e.stopPropagation(); const st = $('#stage'); if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); else if (st.requestFullscreen) st.requestFullscreen().catch(()=>toast('Fullscreen is not available here')); else toast('Fullscreen is not available here'); });
 document.addEventListener('fullscreenchange', resize);
-$('#secReact').addEventListener('toggle', resize);
+$('#secMore').addEventListener('toggle', resize);
 { const sel = $('#avsPreset'); const o0 = el('option'); o0.value = ''; o0.textContent = '— custom —'; sel.appendChild(o0);
   Object.keys(AVS_PRESETS).forEach(k => { const o = el('option'); o.value = k; o.textContent = k; sel.appendChild(o); }); sel.value = S.avs.preset;
-  sel.addEventListener('change', e => { const k = e.target.value; if (!AVS_PRESETS[k]) return; avsApply(AVS_PRESETS[k], k); flash('AVS · ' + k); }); }
-$('#btnAvsRand').addEventListener('click', avsRandomize);
+  sel.addEventListener('change', e => { const k = e.target.value; if (!AVS_PRESETS[k]) return; lastSwitch = performance.now(); avsApply(AVS_PRESETS[k], k); flash('AVS · ' + k); }); }
 $('#btnAvsClear').addEventListener('click', avsClear);
 ENGINES.filter(k => k!=='milk' && k!=='hyper' && k!=='deep').forEach(k => { refreshFxList(k); $('#fxsel-'+k).addEventListener('change', () => renderPanel(k)); renderPanel(k); });
 refreshFxList('hyper'); $('#fxsel-hyper').value = S.hyper.scene; renderPanel('hyper');
 $('#fxsel-hyper').addEventListener('change', e => hySetScene(e.target.value));
 refreshFxList('deep'); $('#fxsel-deep').value = S.deep.scene; renderPanel('deep');
 $('#fxsel-deep').addEventListener('change', e => { deepSetScene(e.target.value); if (!D3.ok && engine === 'deep') $('#deepRemoteScene').textContent = D3_SCENES[S.deep.scene].label; });
-$('#btnD3Prev').addEventListener('click', () => deepStep(-1)); $('#btnD3Next').addEventListener('click', () => deepStep(1)); $('#btnD3Rand').addEventListener('click', deepRandom);
 $('#btnD3Mutate').addEventListener('click', deepMutate); $('#btnD3Reset').addEventListener('click', deepReset);
-bindRange('d3q', 'd3q', 'oD3q', v => ['fast','auto','sharp'][v|0], () => { D3.scale = [0.5, 0.8, 1][S.d3q|0] || 0.8; D3.lastAdj = performance.now(); deepSize(true); });
 document.querySelectorAll('[data-mode-act]').forEach(b => b.addEventListener('click', () => {
   const eng = b.closest('section').id.slice(4);
-  if (b.dataset.modeAct === 'reset') modeReset(eng); else if (eng === 'laser') laserRandom(); else modeMutate(eng); }));
+  if (b.dataset.modeAct === 'reset') dialsReset(eng); else dialsMutate(eng); }));
 refreshFxList('milked'); renderPanel('milked');
 $('#fxsel-milked').addEventListener('change', () => renderPanel('milked'));
 $('#btnMilkReset').addEventListener('click', resetMilkEdits);
-$('#btnHyPrev').addEventListener('click', () => hyStep(-1)); $('#btnHyNext').addEventListener('click', () => hyStep(1));
-$('#btnHyRand').addEventListener('click', hyRandomScene); $('#btnHyMutate').addEventListener('click', hyMutate); $('#btnHyReset').addEventListener('click', hyReset);
-bindRange('hyq', 'hyq', 'oHyq', v => ['low','auto','high'][v|0], () => { HY.W = 0; hySize(); });
+$('#btnMilkMutate').addEventListener('click', () => dialsMutate('milked'));
+$('#btnHyMutate').addEventListener('click', hyMutate); $('#btnHyReset').addEventListener('click', hyReset);
 $('#imgIn').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (!f) return; loadImageURL(URL.createObjectURL(f), true); e.target.value = ''; });
 try { const d = localStorage.getItem('spectral-drift-img'); if (d) loadImageURL(d, false); } catch(e){}
 compileFormulas();
@@ -4235,7 +5075,7 @@ document.addEventListener('keydown', e => {
 // Outgoing (phone): every saved change is sent, debounced, as the whole state; the host forwards it to a linked PC and to Cast.
 // Incoming (PC app, Cast receiver): applyState() rebuilds the state and refreshes every panel and engine without a reload.
 var remoteT = 0, remoteApplying = false;
-const REMOTE_LOCAL = ['vol', 'quality', 'hyq', 'd3q'];              // per-device: volume and render quality stay where they are
+const REMOTE_LOCAL = ['vol', 'quality', 'hyq', 'd3q', 'auto'];      // per-device: volume, render quality and auto-change stay where they are
 function stateJSON(){ return JSON.stringify(S, (k, v) => k === 'milked' ? undefined : v); }
 function remoteOut(json){ if (typeof android !== 'undefined' && android && typeof android.remoteState === 'function') try { android.remoteState(json); } catch(e){} }
 function remoteQueue(){ if (remoteApplying || WALL) return; clearTimeout(remoteT); remoteT = setTimeout(() => remoteOut(stateJSON()), 120); }
